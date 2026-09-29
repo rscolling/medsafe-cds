@@ -1,0 +1,47 @@
+id: rivaroxaban-renal-dose
+version: 1.0.0
+title: "Rivaroxaban 20 mg daily with moderate renal impairment (NVAF)"
+status: prototype
+match:
+  groups: [[rivaroxaban]]
+context:
+  check: rivaroxaban_renal
+  params:
+    crcl_window_days: 90
+    weight_window_days: 365
+    reduce_below: 50
+    avoid_below: 15
+card:
+  fire:
+    indicator: warning
+    summary: "Rivaroxaban {dose} mg with estimated CrCl {crcl} mL/min"
+    detail: >-
+      Rivaroxaban labelling for nonvalvular atrial fibrillation recommends 15 mg once daily with the
+      evening meal when CrCl is 15 to 50 mL/min (Cockcroft-Gault, actual body weight). {extra}
+    why:
+      - "Draft order: {order}, dose {dose} mg."
+      - "Cockcroft-Gault CrCl {crcl} mL/min (age {age:.0f}, weight {weight} kg on {weight_date}, creatinine {creatinine} mg/dL on {creatinine_date})."
+      - "Atrial fibrillation is on the problem list (dose rule is for NVAF)."
+    suggestions:
+      - label: "Change to rivaroxaban 15 mg once daily with the evening meal"
+        replace_dose_mg: 15
+    override_reasons:
+      - [specialist-directed, "Specialist-directed dose"]
+      - [data-incorrect, "Weight/creatinine data incorrect"]
+      - [other, "Other (document in note)"]
+  data_gap:
+    indicator: info
+    summary: "Rivaroxaban {dose} mg: CrCl cannot be estimated (missing data)"
+    detail: >-
+      Creatinine, weight, age or sex is missing or outside its window, so Cockcroft-Gault CrCl cannot be
+      calculated for the renal dose check.
+    why:
+      - "Draft order: {order}, dose {dose} mg."
+      - "Missing: {missing_text}."
+    suggestions:
+      - label: "Obtain current weight and serum creatinine, then re-check dose"
+    override_reasons:
+      - [other, "Other (document in note)"]
+  source:
+    label: "DailyMed: XARELTO (rivaroxaban) label, Dosage and Administration 2.1"
+    url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=10db92f9-2300-4a80-836b-673e1ae91610"

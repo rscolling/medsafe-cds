@@ -1,0 +1,46 @@
+id: metformin-low-egfr
+version: 1.0.0
+title: "Metformin with reduced eGFR"
+status: prototype
+match:
+  groups: [[metformin]]
+context:
+  check: metformin_egfr
+  params:
+    window_days: 90
+    contraindicated_below: 30
+    caution_below: 45
+card:
+  fire:
+    indicator: warning
+    summary: "Metformin ordered with reduced eGFR ({egfr} mL/min/1.73 m2)"
+    detail: >-
+      The most recent eGFR ({egfr}, {egfr_date}, {egfr_source}) is below {threshold}. {label_text}
+    why:
+      - "Draft order: {order} (ingredient: metformin)."
+      - "Latest eGFR within {window_days} days: {egfr} mL/min/1.73 m2 on {egfr_date} ({egfr_source})."
+      - "Rule threshold: {threshold_text}."
+    suggestions:
+      - label: "Cancel the metformin order and review alternative glucose-lowering therapy"
+        delete_order: true
+    override_reasons:
+      - [benefit-outweighs-risk, "Benefit outweighs risk; renal function being monitored"]
+      - [eGFR-outdated, "eGFR value is outdated or not representative"]
+      - [other, "Other (document in note)"]
+  data_gap:
+    indicator: info
+    summary: "Metformin ordered; no eGFR in the last {window_days} days"
+    detail: >-
+      No eGFR (reported or computable from creatinine) was found within {window_days} days of the
+      newest data for this patient. Labelling asks for renal function assessment before initiation.
+    why:
+      - "Draft order: {order} (ingredient: metformin)."
+      - "No eGFR or creatinine result within {window_days} days; the rule cannot rule renal impairment in or out."
+    suggestions:
+      - label: "Order serum creatinine / eGFR before continuing"
+    override_reasons:
+      - [recent-result-elsewhere, "Recent renal function available outside this record"]
+      - [other, "Other (document in note)"]
+  source:
+    label: "DailyMed: metformin hydrochloride tablets label (renal impairment, section 2.3)"
+    url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=8cd5555c-f6b2-28d8-e053-2a95a90a5f1e"

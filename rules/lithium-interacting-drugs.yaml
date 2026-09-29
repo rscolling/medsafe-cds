@@ -1,0 +1,26 @@
+id: lithium-interacting-drugs
+version: 1.0.0
+title: "Lithium with NSAID, ACEI/ARB or diuretic - control rule, context mode does not change it"
+status: prototype
+match:
+  groups: [[lithium], [nsaid, raas, thiazide, loop_diuretic]]
+context: {}
+card:
+  fire:
+    indicator: warning
+    summary: "Lithium with an interacting drug: lithium levels may rise"
+    detail: >-
+      Diuretics, NSAIDs and renin-angiotensin system antagonists may increase lithium serum concentrations.
+      Labelling recommends frequent monitoring of serum lithium and dose adjustment when necessary.
+      This is a deliberate *control* rule: context-aware mode reproduces the baseline result.
+    why:
+      - "Regimen after order: {regimen}."
+      - "Lithium ({lithium}) combined with interacting drug ({group2})."
+    suggestions:
+      - label: "Order a serum lithium level and plan monitoring; consider a non-interacting alternative"
+    override_reasons:
+      - [monitored, "Lithium levels monitored per protocol"]
+      - [other, "Other (document in note)"]
+  source:
+    label: "DailyMed: lithium carbonate label, Drug Interactions (section 7)"
+    url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=b839ff4b-f62d-41ab-a823-550a756d58ec"

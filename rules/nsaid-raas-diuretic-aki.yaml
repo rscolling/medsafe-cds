@@ -1,0 +1,47 @@
+id: nsaid-raas-diuretic-aki
+version: 1.0.0
+title: 'NSAID + ACE inhibitor/ARB + diuretic ("triple whammy") with reduced renal function'
+status: prototype
+match:
+  groups: [[nsaid], [raas], [diuretic]]
+context:
+  check: triple_whammy_renal
+  params:
+    window_days: 90
+    egfr_below: 60
+card:
+  fire:
+    indicator: warning
+    summary: "NSAID + ACEI/ARB + diuretic with eGFR {egfr}: acute kidney injury risk"
+    detail: >-
+      The regimen after this order contains an NSAID, an ACE inhibitor or ARB, and a diuretic, and the most
+      recent eGFR is {egfr} (< {egfr_below}). Observational data associate this triple combination with
+      an increased risk of acute kidney injury.
+    why:
+      - "Regimen after order: {regimen}."
+      - "Classes matched: NSAID ({nsaid}), ACEI/ARB ({raas}), diuretic ({diuretic})."
+      - "Latest eGFR within {window_days} days: {egfr} mL/min/1.73 m2 on {egfr_date} ({egfr_source}); rule fires below {egfr_below}."
+    suggestions:
+      - label: "Cancel the order; consider acetaminophen or a non-NSAID alternative"
+        delete_order: true
+    override_reasons:
+      - [short-course-monitored, "Short course with renal function monitoring planned"]
+      - [no-alternative, "No suitable alternative"]
+      - [other, "Other (document in note)"]
+  data_gap:
+    indicator: info
+    summary: "NSAID + ACEI/ARB + diuretic; no eGFR in the last {window_days} days"
+    detail: >-
+      The combination is present but renal function could not be assessed from the data available, so
+      the AKI-risk threshold could not be evaluated.
+    why:
+      - "Regimen after order: {regimen}."
+      - "No eGFR or creatinine result within {window_days} days."
+    suggestions:
+      - label: "Check serum creatinine / eGFR before signing"
+    override_reasons:
+      - [recent-result-elsewhere, "Recent renal function available outside this record"]
+      - [other, "Other (document in note)"]
+  source:
+    label: "BMJ 2013;346:e8525 - Diuretics, ACEI/ARB and NSAIDs and risk of acute kidney injury"
+    url: "https://www.bmj.com/content/346/bmj.e8525"

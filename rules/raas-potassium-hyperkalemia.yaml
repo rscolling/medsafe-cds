@@ -1,0 +1,32 @@
+id: raas-potassium-hyperkalemia
+version: 1.0.0
+title: "ACEI/ARB + potassium-raising agent (suppressed when recent K and eGFR are reassuring)"
+status: prototype
+match:
+  groups: [[raas], [k_raising]]
+context:
+  # Context suppresses the alert when BOTH are true (declarative, no Python needed):
+  suppress_when_all:
+    - {lab: potassium, op: "<=", value: 5.0, within_days: 30}
+    - {lab: egfr, op: ">=", value: 60, within_days: 90}
+card:
+  fire:
+    indicator: warning
+    summary: "ACEI/ARB with potassium-raising agent: hyperkalemia risk"
+    detail: >-
+      Drugs that inhibit the renin-angiotensin system can cause hyperkalemia; risk factors include renal
+      insufficiency, diabetes and concomitant potassium-sparing diuretics or potassium supplements.
+      No recent reassuring potassium and eGFR pair was found, so this alert was not suppressed.
+    why:
+      - "Regimen after order: {regimen}."
+      - "Classes matched: ACEI/ARB ({raas}) with potassium-raising agent ({k_raising})."
+      - "Suppression needs potassium <= 5.0 within 30 days AND eGFR >= 60 within 90 days; not satisfied: {unmet}."
+    suggestions:
+      - label: "Check serum potassium and renal function; consider monitoring plan or an alternative"
+    override_reasons:
+      - [monitored, "Potassium/renal function monitored per protocol"]
+      - [indication-hf, "Guideline-directed therapy (e.g. heart failure)"]
+      - [other, "Other (document in note)"]
+  source:
+    label: "DailyMed: lisinopril tablets label, Warnings (hyperkalemia) and Drug Interactions"
+    url: "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f2e09150-22f2-4028-b214-917d686200ad"

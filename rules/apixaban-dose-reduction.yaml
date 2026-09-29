@@ -1,0 +1,49 @@
+id: apixaban-dose-reduction
+version: 1.0.0
+title: "Apixaban 5 mg twice daily when dose-reduction criteria are met (NVAF)"
+status: prototype
+match:
+  groups: [[apixaban]]
+context:
+  check: apixaban_dose
+  params:
+    age_gte: 80
+    weight_kg_lte: 60
+    creatinine_mg_dl_gte: 1.5
+    creatinine_window_days: 90
+    weight_window_days: 365
+    criteria_needed: 2
+card:
+  fire:
+    indicator: warning
+    summary: "Apixaban {dose} mg: dose-reduction criteria met ({criteria_met} of 3)"
+    detail: >-
+      Apixaban labelling recommends 2.5 mg twice daily for nonvalvular atrial fibrillation when at least
+      two of: age 80 or older, body weight 60 kg or less, serum creatinine 1.5 mg/dL or higher.
+    why:
+      - "Draft order: {order}, dose {dose} mg."
+      - "Criteria met: {criteria_text}."
+      - "Atrial fibrillation is on the problem list (dose-reduction criteria apply to NVAF only)."
+    suggestions:
+      - label: "Change to apixaban 2.5 mg twice daily"
+        replace_dose_mg: 2.5
+    override_reasons:
+      - [specialist-directed, "Specialist-directed dose"]
+      - [data-incorrect, "Weight/creatinine/age data incorrect"]
+      - [other, "Other (document in note)"]
+  data_gap:
+    indicator: info
+    summary: "Apixaban {dose} mg: cannot confirm dose-reduction criteria (missing data)"
+    detail: >-
+      At least one input (weight or serum creatinine) is missing or older than its window, so the
+      2-of-3 dose-reduction criteria cannot be excluded.
+    why:
+      - "Draft order: {order}, dose {dose} mg."
+      - "Known: {criteria_text}. Missing: {missing_text}."
+    suggestions:
+      - label: "Obtain current weight and serum creatinine, then re-check dose"
+    override_reasons:
+      - [other, "Other (document in note)"]
+  source:
+    label: "FDA label: ELIQUIS (apixaban), Dosage and Administration 2.1"
+    url: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/202155s034lbl.pdf"
