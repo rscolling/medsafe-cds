@@ -1,0 +1,662 @@
+[
+ {
+  "dfn": "100000",
+  "label": "VEHU: EIGHTYSEVEN,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100001",
+  "label": "VEHU: EIGHTYEIGHT,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100002",
+  "label": "VEHU: EIGHTYNINE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100003",
+  "label": "VEHU: NINETY,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100004",
+  "label": "VEHU: NINETYONE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100005",
+  "label": "VEHU: NINETYTWO,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100006",
+  "label": "VEHU: NINETYTHREE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100007",
+  "label": "VEHU: NINETYFOUR,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100008",
+  "label": "VEHU: NINETYFIVE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100009",
+  "label": "VEHU: NINETYSIX,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100010",
+  "label": "VEHU: NINETYSEVEN,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100011",
+  "label": "VEHU: NINETYEIGHT,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100012",
+  "label": "VEHU: NINETYNINE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100013",
+  "label": "VEHU: ONEHUNDRED,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100022",
+  "label": "VEHU: ibuprofen",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100041",
+  "label": "VEHU: BCMA,TWENTYSIX-PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100151",
+  "label": "VEHU: non-VA metformin, no labs",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100157",
+  "label": "VEHU: pending metformin, no labs",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100163",
+  "label": "VEHU: lisinopril x3",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100289",
+  "label": "VEHU: ONEHUNDREDEIGHTYNINE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100612",
+  "label": "VEHU: furosemide + ibuprofen + indomethacin",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100712",
+  "label": "VEHU: FOUR,INPATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100716",
+  "label": "VEHU: EIGHT,INPATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100717",
+  "label": "VEHU: NINE,INPATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100726",
+  "label": "VEHU: EIGHTEEN,INPATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100798",
+  "label": "VEHU: NINETY,INPATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100801",
+  "label": "VEHU: glyburide x3",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100839",
+  "label": "VEHU: GRAPHINGPATIENT,ONE",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100855",
+  "label": "VEHU: DIABETIC,PATIENT MALE",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100863",
+  "label": "VEHU: EHMP,SIX",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100882",
+  "label": "VEHU: COPD,PATIENT MALE",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100886",
+  "label": "VEHU: MEDICATIONS,REVIEW",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100898",
+  "label": "VEHU: HYPERTENSION,PATIENT MALE",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100906",
+  "label": "VEHU: HYPERTENSION,PATIENT MALE",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101065",
+  "label": "VEHU: EHMP,ONEHUNDRED",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101066",
+  "label": "VEHU: EHMP,ONEHUNDREDONE",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101067",
+  "label": "VEHU: EHMP,ONEHUNDREDTWO",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101068",
+  "label": "VEHU: EHMP,ONEHUNDREDTHREE",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101069",
+  "label": "VEHU: EHMP,ONEHUNDREDFOUR",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101070",
+  "label": "VEHU: EHMP,ONEHUNDREDFIVE",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101071",
+  "label": "VEHU: EHMP,ONEHUNDREDSIX",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101072",
+  "label": "VEHU: EHMP,ONEHUNDREDSEVEN",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101073",
+  "label": "VEHU: EHMP,ONEHUNDREDEIGHT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101074",
+  "label": "VEHU: EHMP,ONEHUNDREDNINE",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "101075",
+  "label": "VEHU: EHMP,ONEHUNDREDTEN",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "140",
+  "label": "VEHU: P32",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "146",
+  "label": "VEHU: P16",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "149",
+  "label": "VEHU: EIGHTEEN,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "151",
+  "label": "VEHU: P38",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "168",
+  "label": "VEHU: FORTYFIVE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "204",
+  "label": "VEHU: P12",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "205",
+  "label": "VEHU: P2",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "217",
+  "label": "VEHU: NINE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "218",
+  "label": "VEHU: P37",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "224",
+  "label": "VEHU: ELEVEN,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "228",
+  "label": "VEHU: P13",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "229",
+  "label": "VEHU: FOUR,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "231",
+  "label": "VEHU: FIVE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "236",
+  "label": "VEHU: NINETEEN,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "237",
+  "label": "VEHU: lithium + ibuprofen",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "240",
+  "label": "VEHU: P35",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "25",
+  "label": "VEHU: P3",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "260",
+  "label": "VEHU: P36",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "267",
+  "label": "VEHU: P34",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "271",
+  "label": "VEHU: FOURTEEN,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "3",
+  "label": "VEHU: candesartan + acetazolamide",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "301",
+  "label": "VEHU: FORTYSIX,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "347",
+  "label": "VEHU: P39",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "350",
+  "label": "VEHU: P29",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "366",
+  "label": "VEHU: P28",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "384",
+  "label": "VEHU: P31",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "391",
+  "label": "VEHU: P30",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "407",
+  "label": "VEHU: P27",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "419",
+  "label": "VEHU: P21",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "420",
+  "label": "VEHU: P20",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "428",
+  "label": "VEHU: P17",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "433",
+  "label": "VEHU: EIGHTY,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "442",
+  "label": "VEHU: P33",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "520",
+  "label": "VEHU: FORTY,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "569",
+  "label": "VEHU: FORTYTHREE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "600",
+  "label": "VEHU: FORTYONE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "620",
+  "label": "VEHU: FORTYTWO,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "69",
+  "label": "VEHU: digoxin",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "692",
+  "label": "VEHU: FORTYFOUR,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "706",
+  "label": "VEHU: P24",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "715",
+  "label": "VEHU: P22",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "722",
+  "label": "VEHU: P23",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "723",
+  "label": "VEHU: P26",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "724",
+  "label": "VEHU: FIFTY,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "728",
+  "label": "VEHU: P25",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "737",
+  "label": "VEHU: MANKIND",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "744",
+  "label": "VEHU: FORTYSEVEN,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "745",
+  "label": "VEHU: FORTYEIGHT,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "746",
+  "label": "VEHU: FORTYNINE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "747",
+  "label": "VEHU: FIFTYONE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "748",
+  "label": "VEHU: FIFTYTWO,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "749",
+  "label": "VEHU: FIFTYTHREE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "750",
+  "label": "VEHU: FIFTYFOUR,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "751",
+  "label": "VEHU: FIFTYFIVE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "752",
+  "label": "VEHU: FIFTYSIX,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "753",
+  "label": "VEHU: FIFTYSEVEN,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "754",
+  "label": "VEHU: FIFTYEIGHT,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "755",
+  "label": "VEHU: FIFTYNINE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "775",
+  "label": "VEHU: EIGHTYONE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "776",
+  "label": "VEHU: EIGHTYTWO,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "777",
+  "label": "VEHU: EIGHTYTHREE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "778",
+  "label": "VEHU: EIGHTYFOUR,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "779",
+  "label": "VEHU: EIGHTYFIVE,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "780",
+  "label": "VEHU: EIGHTYSIX,PATIENT",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ },
+ {
+  "dfn": "100881",
+  "label": "VEHU: DM/HTN/CKD problems + rising creatinine, no meds",
+  "kind": "vehu",
+  "note": "Real VEHU record (public synthetic image)"
+ }
+]

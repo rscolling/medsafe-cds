@@ -1,0 +1,165 @@
+{
+  "_comment": "Synthetic patients in VistA wire format. NOT VEHU data.",
+  "patients": [
+    {
+      "dfn": "9000001",
+      "label": "A. Metformin, eGFR 30-45 [VistA twin of hand-01]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-01",
+      "twin_of": "hand-01",
+      "replies": {
+        "select": "SYNTHETICPATIENT,ATWIN^F^2520315^000000000^^^^^0^^0^0^^",
+        "meds": "",
+        "problems": "801^Type 2 diabetes mellitus (SCT 44054006)^A^250.00^^3240315.0000^^^^^^ORQQPL DETAIL^^44054006^0^ICD^\r\n802^Chronic kidney disease (SCT 709044004)^A^585.9^^3240315.0000^^^^^^ORQQPL DETAIL^^709044004^0^ICD^\r\n",
+        "labs": [
+          "8^CH^3260820.1237^72^SERUM^CH 0001 1^PROVIDER,SYNTHETIC^^^3260820.1237\r\n173^CREATININE^     1.5^^mg/dL^.9 - 1.4\r\nReport Released Date/Time: synthetic\r\n"
+        ],
+        "vitals": "29392^WT^150^3260812.1534^150 lb^(68.00 kg)^\r\n",
+        "newold": "3260820.1237^3260820.1237"
+      }
+    },
+    {
+      "dfn": "9000002",
+      "label": "B. Metformin, normal eGFR [VistA twin of hand-02]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-02",
+      "twin_of": "hand-02",
+      "replies": {
+        "select": "SYNTHETICPATIENT,BTWIN^M^2680315^000000000^^^^^0^^0^0^^",
+        "meds": "",
+        "problems": "801^Type 2 diabetes mellitus (SCT 44054006)^A^250.00^^3240315.0000^^^^^^ORQQPL DETAIL^^44054006^0^ICD^\r\n",
+        "labs": [
+          "8^CH^3260820.1237^72^SERUM^CH 0001 1^PROVIDER,SYNTHETIC^^^3260820.1237\r\n173^CREATININE^     0.9^^mg/dL^.9 - 1.4\r\nReport Released Date/Time: synthetic\r\n"
+        ],
+        "vitals": "29392^WT^194^3260812.1534^194 lb^(88.00 kg)^\r\n",
+        "newold": "3260820.1237^3260820.1237"
+      }
+    },
+    {
+      "dfn": "9000003",
+      "label": "C. Metformin, no renal labs (data gap) [VistA twin of hand-03]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-03",
+      "twin_of": "hand-03",
+      "replies": {
+        "select": "SYNTHETICPATIENT,CTWIN^M^2660315^000000000^^^^^0^^0^0^^",
+        "meds": "",
+        "problems": "801^Type 2 diabetes mellitus (SCT 44054006)^A^250.00^^3240315.0000^^^^^^ORQQPL DETAIL^^44054006^0^ICD^\r\n",
+        "labs": [],
+        "vitals": "",
+        "newold": "^"
+      }
+    },
+    {
+      "dfn": "9000004",
+      "label": "D. NSAID + ACEI + loop diuretic, eGFR 40 [VistA twin of hand-04]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-04",
+      "twin_of": "hand-04",
+      "replies": {
+        "select": "SYNTHETICPATIENT,DTWIN^M^2560315^000000000^^^^^0^^0^0^^",
+        "meds": "~OP^701P;O^LISINOPRIL 10MG TAB^^^^^^39001^PENDING^^^30^^0\r\n LISINOPRIL 10MG TAB  Qty: 30\r\n\\ Sig: TAKE ONE TABLET BY MOUTH DAILY\r\n~OP^702P;O^FUROSEMIDE 20MG TAB^^^^^^39002^PENDING^^^30^^0\r\n FUROSEMIDE 20MG TAB  Qty: 30\r\n\\ Sig: TAKE ONE TABLET BY MOUTH DAILY\r\n",
+        "problems": "801^Chronic kidney disease (SCT 709044004)^A^585.9^^3240315.0000^^^^^^ORQQPL DETAIL^^709044004^0^ICD^\r\n802^Hypertensive disorder (SCT 38341003)^A^401.9^^3240315.0000^^^^^^ORQQPL DETAIL^^38341003^0^ICD^\r\n803^Type 2 diabetes mellitus (SCT 44054006)^A^250.00^^3240315.0000^^^^^^ORQQPL DETAIL^^44054006^0^ICD^\r\n",
+        "labs": [
+          "8^CH^3260820.1237^72^SERUM^CH 0001 1^PROVIDER,SYNTHETIC^^^3260820.1237\r\n173^CREATININE^     1.8^^mg/dL^.9 - 1.4\r\nReport Released Date/Time: synthetic\r\n"
+        ],
+        "vitals": "29392^WT^181^3260812.1534^181 lb^(82.00 kg)^\r\n",
+        "newold": "3260820.1237^3260820.1237"
+      }
+    },
+    {
+      "dfn": "9000005",
+      "label": "E. NSAID + ARB + thiazide, preserved eGFR [VistA twin of hand-05]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-05",
+      "twin_of": "hand-05",
+      "replies": {
+        "select": "SYNTHETICPATIENT,ETWIN^M^2600315^000000000^^^^^0^^0^0^^",
+        "meds": "~OP^701P;O^LOSARTAN 50MG TAB^^^^^^39001^PENDING^^^30^^0\r\n LOSARTAN 50MG TAB  Qty: 30\r\n\\ Sig: TAKE ONE TABLET BY MOUTH DAILY\r\n~OP^702P;O^HYDROCHLOROTHIAZIDE 25MG TAB^^^^^^39002^PENDING^^^30^^0\r\n HYDROCHLOROTHIAZIDE 25MG TAB  Qty: 30\r\n\\ Sig: TAKE ONE TABLET BY MOUTH DAILY\r\n",
+        "problems": "801^Hypertensive disorder (SCT 38341003)^A^401.9^^3240315.0000^^^^^^ORQQPL DETAIL^^38341003^0^ICD^\r\n",
+        "labs": [
+          "8^CH^3260820.1237^72^SERUM^CH 0001 1^PROVIDER,SYNTHETIC^^^3260820.1237\r\n173^CREATININE^     1.1^^mg/dL^.9 - 1.4\r\nReport Released Date/Time: synthetic\r\n"
+        ],
+        "vitals": "29392^WT^198^3260812.1534^198 lb^(90.00 kg)^\r\n",
+        "newold": "3260820.1237^3260820.1237"
+      }
+    },
+    {
+      "dfn": "9000006",
+      "label": "F. Frail 84 y/o with AF [VistA twin of hand-06]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-06",
+      "twin_of": "hand-06",
+      "replies": {
+        "select": "SYNTHETICPATIENT,FTWIN^F^2420315^000000000^^^^^0^^0^0^^",
+        "meds": "",
+        "problems": "801^Atrial fibrillation (SCT 49436004)^A^427.31^^3240315.0000^^^^^^ORQQPL DETAIL^^49436004^0^ICD^\r\n802^Hypertensive disorder (SCT 38341003)^A^401.9^^3240315.0000^^^^^^ORQQPL DETAIL^^38341003^0^ICD^\r\n",
+        "labs": [
+          "8^CH^3260820.1237^72^SERUM^CH 0001 1^PROVIDER,SYNTHETIC^^^3260820.1237\r\n173^CREATININE^     1.6^^mg/dL^.9 - 1.4\r\nReport Released Date/Time: synthetic\r\n"
+        ],
+        "vitals": "29392^WT^121^3260812.1534^121 lb^(55.00 kg)^\r\n",
+        "newold": "3260820.1237^3260820.1237"
+      }
+    },
+    {
+      "dfn": "9000007",
+      "label": "G. Robust 63 y/o with AF [VistA twin of hand-07]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-07",
+      "twin_of": "hand-07",
+      "replies": {
+        "select": "SYNTHETICPATIENT,GTWIN^M^2630315^000000000^^^^^0^^0^0^^",
+        "meds": "",
+        "problems": "801^Atrial fibrillation (SCT 49436004)^A^427.31^^3240315.0000^^^^^^ORQQPL DETAIL^^49436004^0^ICD^\r\n",
+        "labs": [
+          "8^CH^3260820.1237^72^SERUM^CH 0001 1^PROVIDER,SYNTHETIC^^^3260820.1237\r\n173^CREATININE^     0.9^^mg/dL^.9 - 1.4\r\nReport Released Date/Time: synthetic\r\n"
+        ],
+        "vitals": "29392^WT^198^3260812.1534^198 lb^(90.00 kg)^\r\n",
+        "newold": "3260820.1237^3260820.1237"
+      }
+    },
+    {
+      "dfn": "9000008",
+      "label": "H. ACEI + KCl, potassium/eGFR reassuring (suppression) [VistA twin of hand-08]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-08",
+      "twin_of": "hand-08",
+      "replies": {
+        "select": "SYNTHETICPATIENT,HTWIN^M^2710315^000000000^^^^^0^^0^0^^",
+        "meds": "~OP^701P;O^LISINOPRIL 10MG TAB^^^^^^39001^PENDING^^^30^^0\r\n LISINOPRIL 10MG TAB  Qty: 30\r\n\\ Sig: TAKE ONE TABLET BY MOUTH DAILY\r\n",
+        "problems": "801^Hypertensive disorder (SCT 38341003)^A^401.9^^3240315.0000^^^^^^ORQQPL DETAIL^^38341003^0^ICD^\r\n802^Heart failure (SCT 84114007)^A^428.0^^3240315.0000^^^^^^ORQQPL DETAIL^^84114007^0^ICD^\r\n",
+        "labs": [
+          "8^CH^3260820.1237^72^SERUM^CH 0001 1^PROVIDER,SYNTHETIC^^^3260820.1237\r\n173^CREATININE^     0.9^^mg/dL^.9 - 1.4\r\nReport Released Date/Time: synthetic\r\n",
+          "8^CH^3260827.0900^72^SERUM^CH 0002 1^PROVIDER,SYNTHETIC^^^3260827.0900\r\n177^POTASSIUM^     4.3^^meq/L^3.8 - 5.3\r\n"
+        ],
+        "vitals": "29392^WT^187^3260812.1534^187 lb^(85.00 kg)^\r\n",
+        "newold": "3260827.0900^3260820.1237"
+      }
+    },
+    {
+      "dfn": "9000009",
+      "label": "I. ACEI + spironolactone, potassium 5.4 [VistA twin of hand-09]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-09",
+      "twin_of": "hand-09",
+      "replies": {
+        "select": "SYNTHETICPATIENT,ITWIN^F^2580315^000000000^^^^^0^^0^0^^",
+        "meds": "~OP^701P;O^LISINOPRIL 10MG TAB^^^^^^39001^PENDING^^^30^^0\r\n LISINOPRIL 10MG TAB  Qty: 30\r\n\\ Sig: TAKE ONE TABLET BY MOUTH DAILY\r\n",
+        "problems": "801^Hypertensive disorder (SCT 38341003)^A^401.9^^3240315.0000^^^^^^ORQQPL DETAIL^^38341003^0^ICD^\r\n802^Heart failure (SCT 84114007)^A^428.0^^3240315.0000^^^^^^ORQQPL DETAIL^^84114007^0^ICD^\r\n",
+        "labs": [
+          "8^CH^3260820.1237^72^SERUM^CH 0001 1^PROVIDER,SYNTHETIC^^^3260820.1237\r\n173^CREATININE^     0.9^^mg/dL^.9 - 1.4\r\nReport Released Date/Time: synthetic\r\n",
+          "8^CH^3260827.0900^72^SERUM^CH 0002 1^PROVIDER,SYNTHETIC^^^3260827.0900\r\n177^POTASSIUM^     5.4^^meq/L^3.8 - 5.3\r\n"
+        ],
+        "vitals": "29392^WT^159^3260812.1534^159 lb^(72.00 kg)^\r\n",
+        "newold": "3260827.0900^3260820.1237"
+      }
+    },
+    {
+      "dfn": "9000010",
+      "label": "J. Lithium + NSAID (control rule) [VistA twin of hand-10]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-10",
+      "twin_of": "hand-10",
+      "replies": {
+        "select": "SYNTHETICPATIENT,JTWIN^M^2810315^000000000^^^^^0^^0^0^^",
+        "meds": "~OP^701P;O^LITHIUM CARBONATE 300MG CAP^^^^^^39001^PENDING^^^30^^0\r\n LITHIUM CARBONATE 300MG CAP  Qty: 30\r\n\\ Sig: TAKE ONE TABLET BY MOUTH DAILY\r\n",
+        "problems": "801^Bipolar disorder (SCT 13746004)^A^296.80^^3240315.0000^^^^^^ORQQPL DETAIL^^13746004^0^ICD^\r\n",
+        "labs": [
+          "8^CH^3260820.1237^72^SERUM^CH 0001 1^PROVIDER,SYNTHETIC^^^3260820.1237\r\n173^CREATININE^     0.9^^mg/dL^.9 - 1.4\r\nReport Released Date/Time: synthetic\r\n"
+        ],
+        "vitals": "29392^WT^176^3260812.1534^176 lb^(80.00 kg)^\r\n",
+        "newold": "3260820.1237^3260820.1237"
+      }
+    }
+  ]
+}
