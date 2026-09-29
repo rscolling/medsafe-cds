@@ -1,0 +1,5 @@
+# False positives: the literal below is a throwaway test API key ("qa-auth-token-..." today; it was
+# "secret-key-0123456789" in commit 5f4e4f3, which cannot be rewritten). Not a credential.
+5f4e4f38a53613f5eec330a566f1c57f99c98e35:backend/tests/unit/test_review_fixes2.py:generic-api-key:331
+5f4e4f38a53613f5eec330a566f1c57f99c98e35:backend/tests/unit/test_review_fixes2.py:generic-api-key:338
+5f4e4f38a53613f5eec330a566f1c57f99c98e35:backend/tests/unit/test_review_fixes2.py:generic-api-key:339
