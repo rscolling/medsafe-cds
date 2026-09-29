@@ -69,7 +69,8 @@ def drug_from_codeable(
             )
     if rxcui is not None:
         ing = mapper.ingredient(rxcui)
-        assert ing is not None
+        if ing is None:  # pragma: no cover - rxcui came from this same mapper
+            raise ValueError(f"unknown RxCUI {rxcui}")
         return DrugRef(
             raw=text or ing.name,
             rxcui=rxcui,

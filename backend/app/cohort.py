@@ -84,7 +84,7 @@ def _obs(pid: str, name: str, loinc: str, disp: str, value: float, unit: str, wh
 
 
 def generate_cohort(n: int = 300, seed: int = 20260929) -> list[dict[str, Any]]:
-    rng = random.Random(seed)  # noqa: S311  # synthetic data, not security
+    rng = random.Random(seed)  # noqa: S311  # nosec B311 - synthetic data, not security
     docs: list[dict[str, Any]] = []
     for i in range(1, n + 1):
         pid = f"syn-{i:04d}"

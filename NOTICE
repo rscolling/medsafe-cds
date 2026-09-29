@@ -1,0 +1,12 @@
+medsafe-cds
+Copyright 2026 Blue Ridge Bear
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+PROTOTYPE, NOT CLINICAL ADVICE. Synthetic data only. See DISCLAIMER.md.
+
+Third-party software included in this repository:
+- backend/third_party/vista_clients: fork of CivicActions/vista-clients (Apache-2.0,
+  Copyright 2025 Owen Barton). Modifications are listed in backend/third_party/vista_clients/NOTICE.md.
+- data/vista/recorded and backend/tests/fixtures/vehu_real_replies.json: replies recorded from the public
+  WorldVistA VEHU Docker image (synthetic training database, no real patients).

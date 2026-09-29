@@ -16,7 +16,7 @@ export default defineConfig({
   webServer: [
     {
       command:
-        `../backend/.venv/bin/python -m uvicorn app.api.app:app_factory --factory --port ${backendPort} --app-dir ../backend`,
+        `${process.env.BACKEND_PYTHON || '../backend/.venv/bin/python'} -m uvicorn app.api.app:app_factory --factory --port ${backendPort} --app-dir ../backend`,
       url: `http://localhost:${backendPort}/health`,
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,

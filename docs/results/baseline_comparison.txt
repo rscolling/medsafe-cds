@@ -1,0 +1,77 @@
+=== ILLUSTRATIVE ON SYNTHETIC DATA - prototype, not clinical advice ===
+
+## FHIR: Synthea-style synthetic cohort (n=300)
+evaluations (patient x candidate order): 2400
+baseline alerts:                   1442
+context-aware actionable alerts:   411
+context-aware data-gap (info):     121
+suppressed by context:             910 (63.1% of baseline)
+
+  rule                                baseline   fire   gap
+  apixaban-dose-reduction                  300      2     4
+  lithium-interacting-drugs                174    174     0
+  metformin-low-egfr                       300     31    66
+  nsaid-raas-diuretic-aki                  136     27    43
+  raas-potassium-hyperkalemia              232    170     0
+  rivaroxaban-renal-dose                   300      7     8
+
+## FHIR: hand-authored patients (n=10)
+evaluations (patient x candidate order): 80
+baseline alerts:                   48
+context-aware actionable alerts:   19
+context-aware data-gap (info):     1
+suppressed by context:             28 (58.3% of baseline)
+
+  rule                                baseline   fire   gap
+  apixaban-dose-reduction                   10      1     0
+  lithium-interacting-drugs                  6      6     0
+  metformin-low-egfr                        10      3     1
+  nsaid-raas-diuretic-aki                    4      2     0
+  raas-potassium-hyperkalemia                8      6     0
+  rivaroxaban-renal-dose                    10      1     0
+
+## VistA (recorded): VEHU patients with meds (n=110)
+evaluations (patient x candidate order): 880
+baseline alerts:                   341
+context-aware actionable alerts:   10
+context-aware data-gap (info):     36
+suppressed by context:             295 (86.5% of baseline)
+
+  rule                                baseline   fire   gap
+  apixaban-dose-reduction                  110      0     0
+  lithium-interacting-drugs                  7      7     0
+  metformin-low-egfr                       110      1    36
+  raas-potassium-hyperkalemia                4      2     0
+  rivaroxaban-renal-dose                   110      0     0
+
+## VistA: synthetic overlay twins (n=10)
+evaluations (patient x candidate order): 80
+baseline alerts:                   48
+context-aware actionable alerts:   19
+context-aware data-gap (info):     1
+suppressed by context:             28 (58.3% of baseline)
+
+  rule                                baseline   fire   gap
+  apixaban-dose-reduction                   10      1     0
+  lithium-interacting-drugs                  6      6     0
+  metformin-low-egfr                        10      3     1
+  nsaid-raas-diuretic-aki                    4      2     0
+  raas-potassium-hyperkalemia                8      6     0
+  rivaroxaban-renal-dose                    10      1     0
+
+## Hand-authored labeled scenarios (FHIR)
+baseline: TP=8 FP=6 FN=0 precision=0.571 recall=1.0
+context : TP=8 FP=0 FN=0 precision=1.0 recall=1.0
+
+## Hand-authored labeled scenarios (VistA twins)
+baseline: TP=8 FP=6 FN=0 precision=0.571 recall=1.0
+context : TP=8 FP=0 FN=0 precision=1.0 recall=1.0
+
+## Limits (read before quoting any number)
+- Cohorts are synthetic. The Synthea-style cohort is drawn from a seeded generator whose prevalence and lab distributions were chosen by the author; the reduction % mostly reflects those choices.
+- The VEHU cohort is a public test database with 2009-2016 dates, stock copied lab values, and few relevant drug combinations; most candidate orders find no matching class there.
+- 'Clinically warranted' labels are the author's judgement on 10 hand-authored scenarios (n is tiny); precision/recall there show the mechanism, not accuracy.
+- Context mode adds data-gap info cards instead of silently passing; they are counted separately from actionable alerts.
+- No clinician review, no real EHR data, no outcome data. Rule thresholds are prototype readings of public labels/literature, not clinical guidance.
+
+=== ILLUSTRATIVE ON SYNTHETIC DATA - prototype, not clinical advice ===

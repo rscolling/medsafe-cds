@@ -1,0 +1,85 @@
+# NOTE: this workflow has not been executed by its author (no GitHub runner available while writing it);
+# every command in it was run locally, see README "Verification status".
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: backend/pyproject.toml }
+      - run: pip install -e ".[dev]"
+      - run: ruff check . ../scripts
+      - run: ruff format --check . ../scripts
+      - run: mypy app
+      - name: tests (coverage gate 85% from pyproject)
+        run: pytest -m "not integration" --cov=app --cov-report=term-missing
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e "backend[dev]"
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --no-audit --no-fund
+        working-directory: frontend
+      - run: npm run lint && npm run typecheck && npm run build
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npx playwright test
+        working-directory: frontend
+        env:
+          CI: "true"
+          BACKEND_PYTHON: python
+
+  integration-hapi:
+    runs-on: ubuntu-latest
+    services:
+      hapi:
+        image: hapiproject/hapi:v7.4.0
+        ports: ["8090:8080"]
+        env:
+          hapi.fhir.fhir_version: R4
+          spring.datasource.url: "jdbc:h2:mem:medsafe"
+          JAVA_TOOL_OPTIONS: "-Xmx768m"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e "backend[dev]"
+      - run: python scripts/load_data.py --fhir-base http://localhost:8090/fhir --wait 240
+      - run: pytest tests/integration -q --no-cov -k "not vista"
+        working-directory: backend
+      # VEHU integration tests are opt-in (6.7 GB image) and skip when VISTA_* env vars are unset.
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e "backend[dev]"
+      - run: pip-audit --skip-editable
+      - run: bandit -q -r backend/app
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm audit --audit-level=high
+        working-directory: frontend
+      - uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
