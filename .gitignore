@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+build/
+audit.sqlite3
+.env
+node_modules/
+frontend/dist/
+frontend/playwright-report/
+frontend/test-results/
