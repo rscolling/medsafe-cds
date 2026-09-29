@@ -144,7 +144,7 @@ def test_broker_client_gives_up_after_second_failure(monkeypatch: pytest.MonkeyP
 
 # Real replies captured from live VEHU (2026-09-29): an M trap for a malformed DFN, and a nonexistent RPC.
 REAL_M_ERROR = (
-    "\x18M  ERROR=SELECT+14^ORWPT, Global variable undefined: ^DPT(\"1;2\"'0),150372994,-%YDB-E-GVUNDEF\r\n"
+    '\x18M  ERROR=SELECT+14^ORWPT, Global variable undefined: ^DPT("1;2"\'0),150372994,-%YDB-E-GVUNDEF\r\n'
     'LAST REF=^DPT("1;2",0)'
 )
 REAL_MISSING_RPC = "=Remote Procedure 'NO SUCH RPC X' doesn't exist on the server.\x00"

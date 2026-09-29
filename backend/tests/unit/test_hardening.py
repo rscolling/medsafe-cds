@@ -350,8 +350,10 @@ def test_unmapped_order_text_is_not_logged(service, capsys) -> None:  # type: ig
     c = make(service)
     r = c.post(URL, json=body)
     logs = capsys.readouterr().out
-    assert r.status_code == 200 and r.json() == {"cards": []}
-    assert "could not be mapped" in logs and "order_fingerprint" in logs  # present, so the next line means something
+    (card,) = r.json()["cards"]  # an unidentified draft is an explicit info card, not a silent empty response
+    assert card["indicator"] == "info" and card["extension"]["org.medsafe.unchecked"] is True
+    assert "SECRETDRUGNAME" not in json.dumps(card)
+    assert "could not be checked" in logs and "order_fingerprint" in logs  # present, so the next line means something
     assert "SECRETDRUGNAME" not in logs and "XYZZY" not in logs
 
 

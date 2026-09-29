@@ -58,6 +58,33 @@ def _suggestion_actions(label: str, order: Resource | None, suggestion: Any) -> 
     return []
 
 
+def unchecked_card(reason: str, evaluated_mode: str) -> dict[str, Any]:
+    """Info card for a draft order that could not be checked: never a silent empty response."""
+    return {
+        "uuid": str(uuid.uuid4()),
+        "summary": "Medication-safety check not performed for this order"[:139],
+        "indicator": "info",
+        "detail": "\n".join(
+            [
+                f"> **{DISCLAIMER}**",
+                "",
+                f"No medication-safety check was performed for this order: {reason}.",
+                "",
+                "Review this order manually. Absence of an alert here does not mean the order is safe.",
+                "",
+                f"_{DISCLAIMER}_",
+            ]
+        ),
+        "source": {"label": "medsafe-cds prototype"},
+        "extension": {
+            "org.medsafe.mode": evaluated_mode,
+            "org.medsafe.unchecked": True,
+            "org.medsafe.dataGap": True,
+            "org.medsafe.disclaimer": DISCLAIMER,
+        },
+    }
+
+
 def alert_to_card(alert: Alert, order: Resource | None = None) -> dict[str, Any]:
     """Build a spec-conformant card. Optional fields are omitted when empty (spec: no null/empty)."""
     card: dict[str, Any] = {

@@ -6,16 +6,18 @@ Replies are CRLF-separated lines; fields are ``^``-separated.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
 
-from app.adapters.vista.fileman import fileman_to_date, fileman_to_datetime
+from app.adapters.vista.fileman import fileman_is_precise, fileman_to_date, fileman_to_datetime
 from app.mapping import codes
 from app.mapping.drugs import parse_strength_mg
 
 Resource = dict[str, Any]
+logger = logging.getLogger("medsafe.vista.parsing")
 
 # ORWPS ACTIVE statuses that mean "the patient currently has this medication".
 # (VEHU: outpatient orders are all PENDING, non-VA meds are ACTIVE.)
@@ -43,6 +45,7 @@ def parse_patient_select(dfn: str, raw: str) -> Resource:
         # e.g. "-1^^^^^Patient is unknown to CPRS." for a nonexistent DFN, or an empty reply
         raise ValueError("ORWPT SELECT: patient not found or unexpected reply")
     dob = fileman_to_date(parts[2])
+    precise = fileman_is_precise(parts[2])
     res: Resource = {
         "resourceType": "Patient",
         "id": dfn,
@@ -52,7 +55,9 @@ def parse_patient_select(dfn: str, raw: str) -> Resource:
         "meta": {"tag": [{"system": "urn:medsafe:data", "code": "vehu-synthetic"}]},
     }
     if dob:
-        res["birthDate"] = dob.isoformat()
+        # An imprecise FileMan DOB (month/day 00, e.g. year only) must not silently become Jan 1st: emit the
+        # partial FHIR date, which downstream code treats as "age unknown" (data gap) instead of a wrong age.
+        res["birthDate"] = dob.isoformat() if precise else f"{dob.year:04d}"
     return res
 
 
@@ -159,6 +164,14 @@ def parse_problems(dfn: str, raw: str) -> list[Resource]:
 class LabSet:
     collected: str  # FileMan
     results: list[dict[str, str]]
+    specimen_ien: str = ""
+    specimen: str = ""  # header piece 5, e.g. SERUM / URINE / PLASMA
+
+
+# Specimens whose creatinine / potassium are comparable with the serum reference ranges the rules assume.
+# VEHU stores urine creatinine (mg/dL, values like 115-208) under the same test name (IEN 173).
+SYSTEMIC_SPECIMENS = frozenset({"SERUM", "PLASMA", "BLOOD", "SER", "PLAS", "SER/PLAS", "SERUM/PLASMA", "WHOLE BLOOD"})
+_COMPARATOR = re.compile(r"^\s*([<>]=?)\s*")
 
 
 def parse_lab_set(raw: str) -> LabSet | None:
@@ -187,44 +200,85 @@ def parse_lab_set(raw: str) -> LabSet | None:
                     "range": f[5].strip(),
                 }
             )
-    return LabSet(collected=head[2], results=results)
+    return LabSet(
+        collected=head[2],
+        results=results,
+        specimen_ien=head[3].strip() if len(head) > 3 else "",
+        specimen=head[4].strip().upper() if len(head) > 4 else "",
+    )
 
 
-def lab_sets_to_observations(dfn: str, sets: list[LabSet]) -> list[Resource]:
-    """Keep only the tests we map (creatinine, potassium, lithium); others are dropped."""
+def _specimen_ok(lab_set: LabSet) -> bool:
+    """Serum/plasma/blood only. A blank specimen is accepted (older or synthetic records), URINE etc. are not."""
+    return not lab_set.specimen or lab_set.specimen in SYSTEMIC_SPECIMENS
+
+
+def lab_sets_to_observations(dfn: str, sets: list[LabSet], skipped: dict[str, int] | None = None) -> list[Resource]:
+    """Keep only the tests we map (creatinine, potassium, lithium) from systemic specimens.
+
+    Specimen (header piece 5) matters: a urine creatinine has the same test name/IEN as serum creatinine but is
+    100x higher. ``skipped`` (optional) collects counts of dropped results by reason for logging/tests.
+    """
     tests = codes.vista_lab_tests()
+    ien_by_key = codes.vista_lab_test_iens()
     out: list[Resource] = []
+
+    def skip(reason: str) -> None:
+        if skipped is not None:
+            skipped[reason] = skipped.get(reason, 0) + 1
+
     for s in sets:
         when = fileman_to_datetime(s.collected)
         if when is None:
+            skip("bad-collection-date")
             continue
         for r in s.results:
             key = tests.get(r["name"].upper())
             if key is None:
                 continue
+            want_ien = ien_by_key.get(key)
+            if want_ien and r["test_ien"] != want_ien:
+                skip("unexpected-test-ien")  # same name, different test (e.g. a 24h urine panel): do not guess
+                continue
+            if not _specimen_ok(s):
+                skip(f"non-systemic-specimen:{s.specimen}")
+                continue
+            m = _COMPARATOR.match(r["value"])
             try:
-                value = float(r["value"].replace("<", "").replace(">", ""))
+                value = float(_COMPARATOR.sub("", r["value"]).replace(",", ""))
             except ValueError:
+                skip("non-numeric")
+                continue
+            lo, hi = codes.PLAUSIBLE.get(key, (float("-inf"), float("inf")))
+            if not lo <= value <= hi:
+                skip("implausible")
+                continue
+            if r["units"] == "" and key in {"creatinine", "potassium"}:
+                skip("missing-units")
                 continue
             loinc = codes.PRIMARY_LOINC[key]
-            out.append(
-                {
-                    "resourceType": "Observation",
-                    "id": f"{dfn}-{s.collected}-{r['test_ien']}",
-                    "status": "final",
-                    "code": {
-                        "coding": [{"system": codes.LOINC, "code": loinc}],
-                        "text": r["name"],
-                    },
-                    "subject": {"reference": f"Patient/{dfn}"},
-                    "effectiveDateTime": when.isoformat(timespec="minutes"),
-                    "valueQuantity": {
-                        "value": value,
-                        "unit": r["units"],
-                        "system": codes.UCUM,
-                    },
-                }
-            )
+            obs: Resource = {
+                "resourceType": "Observation",
+                "id": f"{dfn}-{s.collected}-{r['test_ien']}",
+                "status": "final",
+                "code": {
+                    "coding": [{"system": codes.LOINC, "code": loinc}],
+                    "text": r["name"],
+                },
+                "subject": {"reference": f"Patient/{dfn}"},
+                "effectiveDateTime": when.isoformat(timespec="seconds"),
+                "valueQuantity": {
+                    "value": value,
+                    "unit": r["units"],
+                    "system": codes.UCUM,
+                },
+            }
+            if m:
+                # "<0.3" / ">20": not an exact value. FHIR carries this as valueQuantity.comparator.
+                obs["valueQuantity"]["comparator"] = m.group(1)
+            out.append(obs)
+    if skipped:
+        logger.info("lab results not used", extra={"skipped": dict(skipped)})
     return out
 
 
@@ -265,3 +319,9 @@ def newest_oldest(raw: str) -> tuple[date | None, date | None]:
     """ORWLRR NEWOLD -> ``newestFM^oldestFM`` (``^`` alone = no labs)."""
     a, _, b = raw.strip().partition("^")
     return fileman_to_date(a), fileman_to_date(b)
+
+
+def newest_raw(raw: str) -> str:
+    """The raw FileMan text of the newest collection according to ORWLRR NEWOLD ('' if none/garbage)."""
+    a, _, _ = raw.strip().partition("^")
+    return a.strip() if fileman_to_date(a) else ""

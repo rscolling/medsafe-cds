@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from datetime import date
 
-from app.context import build_context, drug_from_codeable, parse_date
+import pytest
+
+from app.context import build_context, drug_from_codeable, drugs_from_codeable, parse_date
 from app.model import LabValue, PatientContext
 
 
@@ -51,16 +53,18 @@ def test_no_egfr_without_sex_or_birthdate_or_wrong_unit() -> None:
     o = [_obs("2160-0", 1.0, "mg/dL", "2020-01-01")]
     assert "egfr" not in build_context({"id": "1", "birthDate": "1960-01-01"}, [], [], o, source="t").labs
     assert "egfr" not in build_context({"id": "1", "gender": "male"}, [], [], o, source="t").labs
-    o2 = [_obs("2160-0", 88.0, "umol/L", "2020-01-01")]
-    assert (
-        "egfr"
-        not in build_context({"id": "1", "gender": "male", "birthDate": "1960-01-01"}, [], [], o2, source="t").labs
-    )
+    # umol/L is converted to mg/dL (88.4 umol/L = 1.0 mg/dL); an unknown unit is dropped, never guessed
+    o2 = [_obs("2160-0", 88.4, "umol/L", "2020-01-01")]
+    ctx2 = build_context({"id": "1", "gender": "male", "birthDate": "1960-01-01"}, [], [], o2, source="t")
+    assert ctx2.labs["creatinine"][0].value == 1.0 and ctx2.labs["creatinine"][0].unit == "mg/dL"
+    o3 = [_obs("2160-0", 88.0, "furlongs", "2020-01-01")]
+    ctx3 = build_context({"id": "1", "gender": "male", "birthDate": "1960-01-01"}, [], [], o3, source="t")
+    assert "egfr" not in ctx3.labs and "creatinine" not in ctx3.labs and ctx3.dropped_labs
 
 
 def test_weight_lb_converted() -> None:
     ctx = build_context({"id": "1"}, [], [], [_obs("29463-7", 220, "lb", "2020-01-01")], source="t")
-    assert ctx.latest_lab("weight").value == 99.79  # type: ignore[union-attr]
+    assert ctx.latest_lab("weight").value == pytest.approx(99.79, abs=0.01)  # type: ignore[union-attr]
 
 
 def test_inactive_condition_and_status_filtering() -> None:
@@ -89,8 +93,9 @@ def test_drug_from_codeable_rxnorm_and_text() -> None:
     assert d.name == "apixaban" and d.strength_mg == 5.0 and d.dose_mg == 5.0
     d2 = drug_from_codeable({"coding": [{"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "5640"}]})
     assert d2.name == "ibuprofen"  # ingredient code directly
-    d3 = drug_from_codeable({"text": "GLYBURIDE/METFORMIN 5/500"})
-    assert d3.name == "glyburide+metformin"
+    # combination products expand to one drug per ingredient (H2); drug_from_codeable returns the first
+    assert drug_from_codeable({"text": "GLYBURIDE/METFORMIN 5/500"}).name == "glyburide"
+    assert [d.name for d in drugs_from_codeable({"text": "GLYBURIDE/METFORMIN 5/500"})] == ["glyburide", "metformin"]
     assert not drug_from_codeable(None).mapped
 
 

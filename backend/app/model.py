@@ -8,7 +8,7 @@ the same rule fires identically for FHIR- and VistA-sourced patients.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, time
 from typing import Literal
 
 LabSource = Literal["reported", "computed"]
@@ -20,6 +20,12 @@ class LabValue:
     value: float
     unit: str
     source: LabSource = "reported"
+    # Full collection time when known. Same-day results are ordered by it (never by input order).
+    at: datetime | None = None
+
+    @property
+    def sort_key(self) -> datetime:
+        return self.at or datetime.combine(self.when, time.min)
 
 
 @dataclass(frozen=True)
@@ -33,6 +39,8 @@ class DrugRef:
     strength_mg: float | None = None
     dose_mg: float | None = None  # single administered dose if known (draft orders)
     order_id: str | None = None
+    # True when this drug came from a combination/free-text product that was only partly recognised.
+    partial: bool = False
 
     @property
     def mapped(self) -> bool:
@@ -50,6 +58,10 @@ class PatientContext:
     conditions: dict[str, str] = field(default_factory=dict)  # key -> display
     labs: dict[str, list[LabValue]] = field(default_factory=dict)  # sorted ascending by date
     unmapped_meds: list[str] = field(default_factory=list)
+    excluded_meds: list[str] = field(default_factory=list)  # topical/ophthalmic/flush etc.: not systemic, not checked
+    partial_meds: list[str] = field(default_factory=list)  # combination products only partly recognised
+    as_of_policy: str = "anchored"  # how ``as_of`` was chosen: anchored | today | explicit
+    dropped_labs: dict[str, int] = field(default_factory=dict)  # reason -> count (bad unit, implausible, ...)
 
     def age_years(self) -> float | None:
         if self.birth_date is None:
@@ -61,7 +73,9 @@ class PatientContext:
         candidates = [v for v in self.labs.get(key, []) if v.when <= self.as_of]
         if not candidates:
             return None
-        latest = max(candidates, key=lambda v: v.when)
+        # Newest collection time wins. An exact tie (same instant) is resolved by value, never by input order:
+        # the lower eGFR / higher other lab, i.e. the more cautious reading.
+        latest = max(candidates, key=lambda v: (v.sort_key, -v.value if key == "egfr" else v.value))
         if within_days is not None and (self.as_of - latest.when).days > within_days:
             return None
         return latest

@@ -17,7 +17,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.adapters.base import PatientSource, SourceUnavailableError
-from app.api.cards import alert_to_card
+from app.api.cards import alert_to_card, unchecked_card
 from app.api.schemas import CdsRequest, CompareRequest, FeedbackRequest
 from app.audit.store import AuditStore
 from app.config import Settings
@@ -268,6 +268,9 @@ def create_app(
         try:
             for draft in orders:
                 evaluated = service.evaluate_ctx(ctx, draft, mode)
+                if evaluated.unchecked_reason:
+                    metrics.alerts.labels("unchecked-order", mode, source, "data_gap").inc()
+                    cards.append(unchecked_card(evaluated.unchecked_reason, mode))
                 for alert in evaluated.result.alerts:
                     card = alert_to_card(alert, draft)
                     cards.append(card)
