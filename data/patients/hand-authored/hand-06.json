@@ -1,0 +1,275 @@
+{
+  "id": "hand-06",
+  "label": "F. Frail 84 y/o with AF",
+  "synthetic": true,
+  "record_date": "2026-09-01",
+  "resources": [
+    {
+      "resourceType": "Patient",
+      "id": "hand-06",
+      "gender": "female",
+      "birthDate": "1942-03-15",
+      "name": [
+        {
+          "text": "Synthetic, F"
+        }
+      ],
+      "meta": {
+        "tag": [
+          {
+            "system": "urn:medsafe:data",
+            "code": "hand-authored-synthetic"
+          }
+        ]
+      }
+    },
+    {
+      "resourceType": "Condition",
+      "id": "hand-06-cond-1",
+      "subject": {
+        "reference": "Patient/hand-06"
+      },
+      "clinicalStatus": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+            "code": "active"
+          }
+        ]
+      },
+      "code": {
+        "coding": [
+          {
+            "system": "http://snomed.info/sct",
+            "code": "49436004",
+            "display": "Atrial fibrillation"
+          }
+        ],
+        "text": "Atrial fibrillation"
+      }
+    },
+    {
+      "resourceType": "Condition",
+      "id": "hand-06-cond-2",
+      "subject": {
+        "reference": "Patient/hand-06"
+      },
+      "clinicalStatus": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+            "code": "active"
+          }
+        ]
+      },
+      "code": {
+        "coding": [
+          {
+            "system": "http://snomed.info/sct",
+            "code": "38341003",
+            "display": "Hypertensive disorder"
+          }
+        ],
+        "text": "Hypertensive disorder"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "hand-06-creatinine",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "2160-0",
+            "display": "Creatinine [Mass/volume] in Serum or Plasma"
+          }
+        ],
+        "text": "Creatinine [Mass/volume] in Serum or Plasma"
+      },
+      "subject": {
+        "reference": "Patient/hand-06"
+      },
+      "effectiveDateTime": "2026-08-20",
+      "valueQuantity": {
+        "value": 1.6,
+        "unit": "mg/dL",
+        "system": "http://unitsofmeasure.org"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "hand-06-egfr",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "98979-8",
+            "display": "eGFR CKD-EPI 2021"
+          }
+        ],
+        "text": "eGFR CKD-EPI 2021"
+      },
+      "subject": {
+        "reference": "Patient/hand-06"
+      },
+      "effectiveDateTime": "2026-08-20",
+      "valueQuantity": {
+        "value": 31.5,
+        "unit": "mL/min/1.73m2",
+        "system": "http://unitsofmeasure.org"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "hand-06-weight",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7",
+            "display": "Body weight"
+          }
+        ],
+        "text": "Body weight"
+      },
+      "subject": {
+        "reference": "Patient/hand-06"
+      },
+      "effectiveDateTime": "2026-08-12",
+      "valueQuantity": {
+        "value": 55,
+        "unit": "kg",
+        "system": "http://unitsofmeasure.org"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "order": {
+        "resourceType": "MedicationRequest",
+        "id": "hand-06-med-91",
+        "status": "draft",
+        "intent": "order",
+        "subject": {
+          "reference": "Patient/hand-06"
+        },
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1364445",
+              "display": "apixaban 5 MG Oral Tablet"
+            }
+          ],
+          "text": "apixaban 5 MG Oral Tablet"
+        },
+        "dosageInstruction": [
+          {
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 5,
+                  "unit": "mg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "order_key": "apixaban5",
+      "expect_baseline": [
+        "apixaban-dose-reduction"
+      ],
+      "expect_context": [
+        "apixaban-dose-reduction"
+      ],
+      "clinically_warranted": true,
+      "rationale": "age>=80, weight<=60, Cr>=1.5: all 3 criteria"
+    },
+    {
+      "order": {
+        "resourceType": "MedicationRequest",
+        "id": "hand-06-med-92",
+        "status": "draft",
+        "intent": "order",
+        "subject": {
+          "reference": "Patient/hand-06"
+        },
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1364435",
+              "display": "apixaban 2.5 MG Oral Tablet"
+            }
+          ],
+          "text": "apixaban 2.5 MG Oral Tablet"
+        },
+        "dosageInstruction": [
+          {
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 2.5,
+                  "unit": "mg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "order_key": "apixaban2.5",
+      "expect_baseline": [
+        "apixaban-dose-reduction"
+      ],
+      "expect_context": [],
+      "clinically_warranted": false,
+      "rationale": "already reduced dose (baseline fires on drug name only)"
+    },
+    {
+      "order": {
+        "resourceType": "MedicationRequest",
+        "id": "hand-06-med-93",
+        "status": "draft",
+        "intent": "order",
+        "subject": {
+          "reference": "Patient/hand-06"
+        },
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1232086",
+              "display": "rivaroxaban 20 MG Oral Tablet"
+            }
+          ],
+          "text": "rivaroxaban 20 MG Oral Tablet"
+        },
+        "dosageInstruction": [
+          {
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 20,
+                  "unit": "mg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "order_key": "rivaroxaban20",
+      "expect_baseline": [
+        "rivaroxaban-renal-dose"
+      ],
+      "expect_context": [
+        "rivaroxaban-renal-dose"
+      ],
+      "clinically_warranted": true,
+      "rationale": "CrCl ~26 mL/min"
+    }
+  ]
+}

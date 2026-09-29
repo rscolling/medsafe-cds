@@ -1,0 +1,228 @@
+{
+  "id": "hand-05",
+  "label": "E. NSAID + ARB + thiazide, preserved eGFR",
+  "synthetic": true,
+  "record_date": "2026-09-01",
+  "resources": [
+    {
+      "resourceType": "Patient",
+      "id": "hand-05",
+      "gender": "male",
+      "birthDate": "1960-03-15",
+      "name": [
+        {
+          "text": "Synthetic, E"
+        }
+      ],
+      "meta": {
+        "tag": [
+          {
+            "system": "urn:medsafe:data",
+            "code": "hand-authored-synthetic"
+          }
+        ]
+      }
+    },
+    {
+      "resourceType": "Condition",
+      "id": "hand-05-cond-1",
+      "subject": {
+        "reference": "Patient/hand-05"
+      },
+      "clinicalStatus": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+            "code": "active"
+          }
+        ]
+      },
+      "code": {
+        "coding": [
+          {
+            "system": "http://snomed.info/sct",
+            "code": "38341003",
+            "display": "Hypertensive disorder"
+          }
+        ],
+        "text": "Hypertensive disorder"
+      }
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "hand-05-med-1",
+      "status": "active",
+      "intent": "order",
+      "subject": {
+        "reference": "Patient/hand-05"
+      },
+      "medicationCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "979492",
+            "display": "losartan potassium 50 MG Oral Tablet"
+          }
+        ],
+        "text": "losartan potassium 50 MG Oral Tablet"
+      },
+      "dosageInstruction": [
+        {
+          "doseAndRate": [
+            {
+              "doseQuantity": {
+                "value": 50,
+                "unit": "mg"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "hand-05-med-2",
+      "status": "active",
+      "intent": "order",
+      "subject": {
+        "reference": "Patient/hand-05"
+      },
+      "medicationCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "310798",
+            "display": "hydrochlorothiazide 25 MG Oral Tablet"
+          }
+        ],
+        "text": "hydrochlorothiazide 25 MG Oral Tablet"
+      },
+      "dosageInstruction": [
+        {
+          "doseAndRate": [
+            {
+              "doseQuantity": {
+                "value": 25,
+                "unit": "mg"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "Observation",
+      "id": "hand-05-creatinine",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "2160-0",
+            "display": "Creatinine [Mass/volume] in Serum or Plasma"
+          }
+        ],
+        "text": "Creatinine [Mass/volume] in Serum or Plasma"
+      },
+      "subject": {
+        "reference": "Patient/hand-05"
+      },
+      "effectiveDateTime": "2026-08-20",
+      "valueQuantity": {
+        "value": 1.1,
+        "unit": "mg/dL",
+        "system": "http://unitsofmeasure.org"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "hand-05-egfr",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "98979-8",
+            "display": "eGFR CKD-EPI 2021"
+          }
+        ],
+        "text": "eGFR CKD-EPI 2021"
+      },
+      "subject": {
+        "reference": "Patient/hand-05"
+      },
+      "effectiveDateTime": "2026-08-20",
+      "valueQuantity": {
+        "value": 73.8,
+        "unit": "mL/min/1.73m2",
+        "system": "http://unitsofmeasure.org"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "hand-05-weight",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7",
+            "display": "Body weight"
+          }
+        ],
+        "text": "Body weight"
+      },
+      "subject": {
+        "reference": "Patient/hand-05"
+      },
+      "effectiveDateTime": "2026-08-12",
+      "valueQuantity": {
+        "value": 90,
+        "unit": "kg",
+        "system": "http://unitsofmeasure.org"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "order": {
+        "resourceType": "MedicationRequest",
+        "id": "hand-05-med-91",
+        "status": "draft",
+        "intent": "order",
+        "subject": {
+          "reference": "Patient/hand-05"
+        },
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "198014",
+              "display": "naproxen 500 MG Oral Tablet"
+            }
+          ],
+          "text": "naproxen 500 MG Oral Tablet"
+        },
+        "dosageInstruction": [
+          {
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 500,
+                  "unit": "mg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "order_key": "naproxen",
+      "expect_baseline": [
+        "nsaid-raas-diuretic-aki"
+      ],
+      "expect_context": [],
+      "clinically_warranted": false,
+      "rationale": "eGFR ~74: triple-whammy risk not elevated by renal function"
+    }
+  ]
+}

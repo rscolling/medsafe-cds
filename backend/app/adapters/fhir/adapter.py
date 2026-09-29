@@ -1,0 +1,142 @@
+"""FHIR R4 data source: HAPI FHIR over HTTP (httpx) or the in-repo JSON fixtures.
+
+``mode``:
+  * ``http``     always talk to HAPI (``MEDSAFE_FHIR_BASE_URL``)
+  * ``fixtures`` serve the in-repo patients (hand-authored + generated Synthea-style cohort)
+  * ``auto``     use HAPI when it answers ``/metadata`` at startup, else fixtures (logged)
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from pathlib import Path
+from typing import Any
+
+import httpx
+
+from app.adapters.base import PatientSummary, Resource, SourceUnavailableError
+
+logger = logging.getLogger("medsafe.fhir")
+
+
+class FixtureStore:
+    """In-memory FHIR resources loaded from ``data/patients`` JSON files."""
+
+    def __init__(self, files: list[Path], extra_docs: list[dict[str, Any]] | None = None) -> None:
+        self.docs: dict[str, dict[str, Any]] = {}
+        for f in files:
+            doc = json.loads(f.read_text("utf-8"))
+            self.docs[doc["id"]] = doc
+        for doc in extra_docs or []:
+            self.docs[doc["id"]] = doc
+
+    def resources(self, pid: str, rtype: str) -> list[Resource]:
+        doc = self.docs.get(pid)
+        if doc is None:
+            raise SourceUnavailableError(f"unknown patient {pid}")
+        return [r for r in doc["resources"] if r["resourceType"] == rtype]
+
+
+class FhirAdapter:
+    name = "fhir"
+
+    def __init__(
+        self,
+        store: FixtureStore,
+        *,
+        mode: str = "auto",
+        base_url: str = "http://localhost:8090/fhir",
+        timeout_s: float = 3.0,
+        client: httpx.Client | None = None,
+        demo_ids: list[str] | None = None,
+    ) -> None:
+        self._store = store
+        self._base = base_url.rstrip("/")
+        self._client = client or httpx.Client(timeout=timeout_s)
+        self._demo_ids = demo_ids
+        self.mode = self._resolve_mode(mode)
+
+    def _resolve_mode(self, mode: str) -> str:
+        if mode in {"http", "fixtures"}:
+            return mode
+        try:
+            r = self._client.get(f"{self._base}/metadata", params={"_summary": "true"})
+            r.raise_for_status()
+            logger.info("HAPI FHIR reachable at %s; using it", self._base)
+            return "http"
+        except httpx.HTTPError as exc:
+            logger.warning("HAPI FHIR not reachable (%s); falling back to in-repo fixtures", exc)
+            return "fixtures"
+
+    # ------------------------------------------------------------ http helpers
+    def _get(self, path: str, params: dict[str, str] | None = None) -> dict[str, Any]:
+        try:
+            r = self._client.get(f"{self._base}/{path}", params=params)
+            r.raise_for_status()
+            return dict(r.json())
+        except httpx.HTTPError as exc:
+            raise SourceUnavailableError(f"FHIR request failed: {exc}") from exc
+
+    def _search(self, rtype: str, params: dict[str, str]) -> list[Resource]:
+        out: list[Resource] = []
+        bundle = self._get(rtype, {**params, "_count": "200"})
+        while True:
+            out += [e["resource"] for e in bundle.get("entry", [])]
+            nxt = next((link["url"] for link in bundle.get("link", []) if link["relation"] == "next"), None)
+            if not nxt:
+                return out
+            try:
+                r = self._client.get(nxt)
+                r.raise_for_status()
+                bundle = r.json()
+            except httpx.HTTPError as exc:
+                raise SourceUnavailableError(f"FHIR paging failed: {exc}") from exc
+
+    # ------------------------------------------------------------ interface
+    def list_patients(self) -> list[PatientSummary]:
+        ids = self._demo_ids or sorted(self._store.docs)
+        out: list[PatientSummary] = []
+        for pid in ids:
+            doc = self._store.docs.get(pid)
+            if doc is None:
+                continue
+            kind = "hand-authored" if pid.startswith("hand-") else "synthea-style"
+            out.append(PatientSummary(pid, doc.get("label", pid), kind, doc.get("note", "")))
+        return out
+
+    def get_patient(self, patient_id: str) -> Resource:
+        if self.mode == "http":
+            return self._get(f"Patient/{patient_id}")
+        return self._store.resources(patient_id, "Patient")[0]
+
+    def get_active_meds(self, patient_id: str) -> list[Resource]:
+        if self.mode == "http":
+            return self._search("MedicationRequest", {"patient": patient_id, "status": "active"})
+        return [r for r in self._store.resources(patient_id, "MedicationRequest") if r.get("status") == "active"]
+
+    def get_problems(self, patient_id: str) -> list[Resource]:
+        if self.mode == "http":
+            return self._search("Condition", {"patient": patient_id})
+        return self._store.resources(patient_id, "Condition")
+
+    def get_lab_series(self, patient_id: str) -> list[Resource]:
+        if self.mode == "http":
+            return self._search("Observation", {"patient": patient_id})
+        return self._store.resources(patient_id, "Observation")
+
+    def status(self) -> dict[str, Any]:
+        info: dict[str, Any] = {
+            "mode": self.mode,
+            "base_url": self._base,
+            "patients": len(self._store.docs),
+        }
+        if self.mode == "http":
+            try:
+                self._get("metadata", {"_summary": "true"})
+                info["reachable"] = True
+            except SourceUnavailableError as exc:
+                info.update(reachable=False, error=str(exc))
+        else:
+            info["reachable"] = True
+        return info

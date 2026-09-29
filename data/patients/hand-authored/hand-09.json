@@ -1,0 +1,248 @@
+{
+  "id": "hand-09",
+  "label": "I. ACEI + spironolactone, potassium 5.4",
+  "synthetic": true,
+  "record_date": "2026-09-01",
+  "resources": [
+    {
+      "resourceType": "Patient",
+      "id": "hand-09",
+      "gender": "female",
+      "birthDate": "1958-03-15",
+      "name": [
+        {
+          "text": "Synthetic, I"
+        }
+      ],
+      "meta": {
+        "tag": [
+          {
+            "system": "urn:medsafe:data",
+            "code": "hand-authored-synthetic"
+          }
+        ]
+      }
+    },
+    {
+      "resourceType": "Condition",
+      "id": "hand-09-cond-1",
+      "subject": {
+        "reference": "Patient/hand-09"
+      },
+      "clinicalStatus": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+            "code": "active"
+          }
+        ]
+      },
+      "code": {
+        "coding": [
+          {
+            "system": "http://snomed.info/sct",
+            "code": "38341003",
+            "display": "Hypertensive disorder"
+          }
+        ],
+        "text": "Hypertensive disorder"
+      }
+    },
+    {
+      "resourceType": "Condition",
+      "id": "hand-09-cond-2",
+      "subject": {
+        "reference": "Patient/hand-09"
+      },
+      "clinicalStatus": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+            "code": "active"
+          }
+        ]
+      },
+      "code": {
+        "coding": [
+          {
+            "system": "http://snomed.info/sct",
+            "code": "84114007",
+            "display": "Heart failure"
+          }
+        ],
+        "text": "Heart failure"
+      }
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "id": "hand-09-med-1",
+      "status": "active",
+      "intent": "order",
+      "subject": {
+        "reference": "Patient/hand-09"
+      },
+      "medicationCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "314076",
+            "display": "lisinopril 10 MG Oral Tablet"
+          }
+        ],
+        "text": "lisinopril 10 MG Oral Tablet"
+      },
+      "dosageInstruction": [
+        {
+          "doseAndRate": [
+            {
+              "doseQuantity": {
+                "value": 10,
+                "unit": "mg"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "Observation",
+      "id": "hand-09-creatinine",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "2160-0",
+            "display": "Creatinine [Mass/volume] in Serum or Plasma"
+          }
+        ],
+        "text": "Creatinine [Mass/volume] in Serum or Plasma"
+      },
+      "subject": {
+        "reference": "Patient/hand-09"
+      },
+      "effectiveDateTime": "2026-08-20",
+      "valueQuantity": {
+        "value": 0.9,
+        "unit": "mg/dL",
+        "system": "http://unitsofmeasure.org"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "hand-09-egfr",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "98979-8",
+            "display": "eGFR CKD-EPI 2021"
+          }
+        ],
+        "text": "eGFR CKD-EPI 2021"
+      },
+      "subject": {
+        "reference": "Patient/hand-09"
+      },
+      "effectiveDateTime": "2026-08-20",
+      "valueQuantity": {
+        "value": 69.4,
+        "unit": "mL/min/1.73m2",
+        "system": "http://unitsofmeasure.org"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "hand-09-potassium",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "2823-3",
+            "display": "Potassium [Moles/volume] in Serum or Plasma"
+          }
+        ],
+        "text": "Potassium [Moles/volume] in Serum or Plasma"
+      },
+      "subject": {
+        "reference": "Patient/hand-09"
+      },
+      "effectiveDateTime": "2026-08-27",
+      "valueQuantity": {
+        "value": 5.4,
+        "unit": "mmol/L",
+        "system": "http://unitsofmeasure.org"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "hand-09-weight",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7",
+            "display": "Body weight"
+          }
+        ],
+        "text": "Body weight"
+      },
+      "subject": {
+        "reference": "Patient/hand-09"
+      },
+      "effectiveDateTime": "2026-08-12",
+      "valueQuantity": {
+        "value": 72,
+        "unit": "kg",
+        "system": "http://unitsofmeasure.org"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "order": {
+        "resourceType": "MedicationRequest",
+        "id": "hand-09-med-91",
+        "status": "draft",
+        "intent": "order",
+        "subject": {
+          "reference": "Patient/hand-09"
+        },
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "9997",
+              "display": "spironolactone"
+            }
+          ],
+          "text": "spironolactone"
+        },
+        "dosageInstruction": [
+          {
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 25,
+                  "unit": "mg"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "order_key": "spironolactone",
+      "expect_baseline": [
+        "raas-potassium-hyperkalemia"
+      ],
+      "expect_context": [
+        "raas-potassium-hyperkalemia"
+      ],
+      "clinically_warranted": true,
+      "rationale": "K 5.4: suppression criteria not met"
+    }
+  ]
+}
