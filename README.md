@@ -94,6 +94,45 @@ prefetch is also accepted. Operational endpoints: `/health`, `/ready`, `/metrics
   (another 6+ GB pull, unmaintained). The FHIR side here is HAPI R4 with synthetic patients.
 - **Rule matching is deliberately small**: 6 rules, a small RxNorm/LOINC/SNOMED mapping table. Drugs the
   mapper cannot identify (for example free-text VistA names) are counted and reported, never guessed.
+- **Non-systemic products are not checked.** A drug name containing any of these words is excluded from systemic
+  drug mapping (it would otherwise match its active ingredient and fire, e.g. for a topical NSAID gel or a
+  heparin lock flush): `GEL`, `CREAM`, `OINT`, `OINTMENT`, `LOTION`, `TOPICAL`, `OPHTH`, `OPHTHALMIC`, `EYE`,
+  `OTIC`, `NASAL`, `SHAMPOO`, `FOAM`, `FLUSH`, `FAB`, `IMMUNE`. A draft order like that gets an explicit
+  "check not performed" info card, and a current medication like that is listed under `excluded_meds`, never silently
+  ignored. Patches are deliberately *not* excluded (nicotine and other patches are systemic). The list is a
+  word-level heuristic (`backend/app/mapping/drugs.py`), not a formulary. A combination product that is only partly
+  recognised also gets the info card.
+
+## Configuration (environment variables)
+
+All settings are read once at startup (`backend/app/config.py`); every one has a default. The template is `.env.example`.
+
+| variable | default | meaning |
+|---|---|---|
+| `MEDSAFE_ROOT` | repo root | directory holding `rules/` and `data/`; set it for a non-editable install (the Docker image does) |
+| `MEDSAFE_ENV` | `dev` | `production` refuses to start without `MEDSAFE_AUDIT_API_KEY` and a non-default salt |
+| `MEDSAFE_AUDIT_API_KEY` | unset | `X-API-Key` for `/api/audit*`, `/metrics`, `/api/sources`, `/api/patients`, `/api/compare` |
+| `MEDSAFE_PSEUDONYM_SALT` | dev default | salt for pseudonymised ids in logs and audit (16+ chars) |
+| `MEDSAFE_AUDIT_DB` | `audit.sqlite3` | SQLite file for the audit trail (`:memory:` for tests) |
+| `MEDSAFE_CORS_ORIGINS` | `http://localhost:5173,http://localhost:8080` | comma-separated browser origins allowed by CORS |
+| `MEDSAFE_LOG_LEVEL` | `INFO` | log level of the structured JSON logs |
+| `MEDSAFE_RATE_LIMIT_PER_MINUTE` | `120` | per-client token bucket (`0` disables); see the proxy note above |
+| `MEDSAFE_CLIENT_IP_HEADER` | unset | trusted proxy header carrying the client IP (e.g. `X-Forwarded-For`) |
+| `MEDSAFE_MAX_BODY_BYTES` / `MEDSAFE_MAX_DRAFT_ORDERS` | `1000000` / `50` | request size and draft-order caps |
+| `MEDSAFE_AS_OF_POLICY` | `auto` | `auto` \| `today` \| `anchored` (see "VistA live mode") |
+| `MEDSAFE_FHIR_MODE` | `auto` | `http` (HAPI) \| `fixtures` \| `auto` |
+| `MEDSAFE_FHIR_BASE_URL` | `http://localhost:8090/fhir` | HAPI FHIR base URL |
+| `MEDSAFE_FHIR_TIMEOUT_S` | `3` | HTTP timeout for HAPI calls, seconds |
+| `MEDSAFE_VISTA_MODE` | `auto` | `live` \| `recorded` \| `auto` |
+| `VISTA_HOST` / `VISTA_PORT` | `localhost` / `9430` | RPC Broker address |
+| `VISTA_ACCESS_CODE` / `VISTA_VERIFY_CODE` | unset | sign-on codes (public VEHU demo codes live in `.env.example`) |
+| `VISTA_CONTEXT` | `OR CPRS GUI CHART` | broker application context |
+| `MEDSAFE_VISTA_TIMEOUT_S` | `8` | socket timeout per broker operation |
+| `MEDSAFE_VISTA_CACHE_TTL_S` | `60` | per-patient cache lifetime |
+| `MEDSAFE_VISTA_FETCH_DEADLINE_S` | `10` | total time budget for one patient fetch |
+| `MEDSAFE_VISTA_AUTH_COOLDOWN_S` | `300` | pause on all sign-ons after a rejected login (lockout protection) |
+| `MEDSAFE_VISTA_BREAKER_COOLDOWN_S` | `15` | fail-fast window after a transport failure |
+| `MEDSAFE_VISTA_PENDING_ACTIVE` | `true` | count VistA `PENDING` orders as current medications |
 
 ## Verification status (what was actually run)
 
