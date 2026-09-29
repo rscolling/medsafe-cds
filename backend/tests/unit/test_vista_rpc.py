@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -139,3 +140,45 @@ def test_broker_client_gives_up_after_second_failure(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(rpc, "VistABroker", refuse)
     with pytest.raises(VistaUnavailableError, match="refused"):
         BrokerRpcClient("h", 1, "a", "v", "ctx", 1.0).call("X")
+
+
+# Real replies captured from live VEHU (2026-09-29): an M trap for a malformed DFN, and a nonexistent RPC.
+REAL_M_ERROR = (
+    "\x18M  ERROR=SELECT+14^ORWPT, Global variable undefined: ^DPT(\"1;2\"'0),150372994,-%YDB-E-GVUNDEF\r\n"
+    'LAST REF=^DPT("1;2",0)'
+)
+REAL_MISSING_RPC = "=Remote Procedure 'NO SUCH RPC X' doesn't exist on the server.\x00"
+
+
+@pytest.mark.parametrize("prefix_flag", [True, False, None])
+def test_real_m_error_reply_raises_not_data(prefix_flag: bool | None) -> None:
+    with pytest.raises(RPCError, match="M  ERROR=SELECT"):
+        parse_response(REAL_M_ERROR, had_null_prefix=prefix_flag)
+
+
+@pytest.mark.parametrize("prefix_flag", [True, False, None])
+@pytest.mark.parametrize("prefix_char", ["=", ">"])
+def test_real_missing_rpc_reply_raises_not_data(prefix_flag: bool | None, prefix_char: str) -> None:
+    reply = prefix_char + REAL_MISSING_RPC[1:]
+    with pytest.raises(RPCError, match="doesn't exist"):
+        parse_response(reply, had_null_prefix=prefix_flag)
+
+
+def test_no_data_found_and_normal_data_still_parse_as_data() -> None:
+    assert "No Data Found" in parse_response("\r\nNo Data Found", had_null_prefix=True).raw
+    assert parse_response("A^B\r\nC^D\r\n", had_null_prefix=True).lines == ["A^B", "C^D"]
+    # text that merely mentions an error later in the reply is data
+    assert parse_response("OK\r\nM  ERROR appears later", had_null_prefix=True).lines[0] == "OK"
+
+
+def test_m_error_from_broker_becomes_vista_unavailable_not_empty_data() -> None:
+    class Broker:
+        def call_rpc(self, rpc: str, params: list[object]) -> object:
+            parse_response(REAL_M_ERROR, had_null_prefix=True)
+            raise AssertionError("unreachable")
+
+    client = BrokerRpcClient.__new__(BrokerRpcClient)
+    client._lock = threading.Lock()
+    client._broker = Broker()
+    with pytest.raises(VistaUnavailableError, match="M  ERROR"):
+        client.call("ORWPT SELECT", "1;2")

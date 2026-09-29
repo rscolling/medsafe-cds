@@ -402,6 +402,9 @@ _M_ERROR_RE = _re.compile(
 )
 
 
+_LEADING_CONTROL = "".join(chr(c) for c in range(32))
+
+
 def parse_response(raw: str, *, had_null_prefix: bool | None = None) -> RPCResponse:
     """Parse a raw server response into an RPCResponse.
 
@@ -466,9 +469,14 @@ def parse_response(raw: str, *, had_null_prefix: bool | None = None) -> RPCRespo
         data = raw[pos:]
 
     # Detect M errors returned as data (not via SNDERR)
+    # medsafe-cds patch: the reply may start with a one-byte SNDERR length prefix that can be a control character
+    # (e.g. \x18 before "M  ERROR=...") or a printable one (e.g. "=" / ">" before "Remote Procedure '...'
+    # doesn't exist"). Those errors must never be parsed as data, so test the text with the prefix removed too.
     clean = data.strip().rstrip("\x00")
-    if _M_ERROR_RE.match(clean):
-        raise RPCError(clean)
+    for candidate in (clean, clean[1:]):
+        message = candidate.lstrip(_LEADING_CONTROL)
+        if _M_ERROR_RE.match(message):
+            raise RPCError(message)
 
     # Detect array vs single value
     if "\r\n" in data:

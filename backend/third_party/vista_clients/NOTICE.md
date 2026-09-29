@@ -17,3 +17,7 @@
 4. `rpc/broker.py`: removed the built-in fallback demo credentials. `_resolve_credentials` now raises
    `AuthenticationError` unless codes are passed explicitly or set via `VISTA_ACCESS_CODE` / `VISTA_VERIFY_CODE`,
    so no credential is hard-coded anywhere in this repository (the public VEHU demo pair lives only in `.env.example`).
+5. `rpc/protocol.py`: the M-error / "Remote Procedure ... doesn't exist" detection now also runs when the reply starts with
+   a one-byte SNDERR length prefix (control character such as `\x18`, or `=` / `>`), so these errors are raised as
+   `RPCError` instead of being returned as data (which had made VistA errors look like empty meds/labs). Verified
+   against live VEHU replies; the `"\r\nNo Data Found"` data fix is unchanged.
