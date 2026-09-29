@@ -76,5 +76,16 @@ SPL or label PDF. Thresholds are author interpretations.
 
 ## Verification log
 
-See the README table for the summary. Final numbers from the clean-clone run are appended by the author at the
-bottom of this file.
+Fresh `git clone` into /tmp, `scripts/setup.sh`, on 2026-09-29 (Python 3.12.14, Node 22):
+
+- `make test`: 184 passed, 18 integration tests deselected, coverage 96.94% (gate 85%).
+- `make lint`: ruff check + `ruff format --check` clean, `mypy app` (strict) clean, eslint (0 warnings) and tsc clean.
+- `npm run build` OK. Playwright e2e: 7 passed (system Chrome).
+- Live VEHU integration tests (broker up, HAPI down): 5 passed, 13 HAPI tests skipped. In the original checkout with
+  HAPI v7.4.0 and VEHU both up: 18 passed.
+- Security scans: `pip-audit` no known vulnerabilities (found pytest 8.4.2 advisory, fixed by requiring pytest>=9.0.3);
+  `bandit -r app` no issues after one dynamic-SQL column allow-list and three justified `nosec`;
+  `npm audit --audit-level=high` 0 vulnerabilities.
+- Not verified: GitHub Actions workflow (not executed), full `docker compose up` stack (the sandbox bridge network
+  dropped container-to-container traffic, so the loader could not reach HAPI; images build and the backend image
+  serves /health and /cds-services when run with host networking).
