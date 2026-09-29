@@ -39,8 +39,9 @@ def lines(raw: str) -> list[str]:
 def parse_patient_select(dfn: str, raw: str) -> Resource:
     """ORWPT SELECT -> ``NAME^SEX^DOB(FileMan)^SSN^...``. We deliberately drop SSN (fake in VEHU)."""
     parts = raw.strip().split("\r\n")[0].split("^")
-    if len(parts) < 3 or not parts[0]:
-        raise ValueError(f"unexpected ORWPT SELECT reply for {dfn}: {raw[:80]!r}")
+    if len(parts) < 3 or not parts[0].strip() or parts[0].strip().startswith("-"):
+        # e.g. "-1^^^^^Patient is unknown to CPRS." for a nonexistent DFN, or an empty reply
+        raise ValueError("ORWPT SELECT: patient not found or unexpected reply")
     dob = fileman_to_date(parts[2])
     res: Resource = {
         "resourceType": "Patient",

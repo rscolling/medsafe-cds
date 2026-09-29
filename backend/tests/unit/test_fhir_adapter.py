@@ -99,6 +99,8 @@ def test_auto_mode_falls_back_to_fixtures_when_hapi_down() -> None:
         "mode": "fixtures",
         "base_url": "http://hapi/fhir",
         "patients": 10,
+        "requested_mode": "auto",
+        "fell_back_to_fixtures": True,
         "reachable": True,
     }
 

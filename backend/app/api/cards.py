@@ -9,7 +9,7 @@ from typing import Any
 from app.model import Alert
 from app.rules.engine import DISCLAIMER
 
-OVERRIDE_SYSTEM = "https://github.com/medsafe-cds/override-reasons"  # namespace URI only
+OVERRIDE_SYSTEM = "urn:medsafe-cds:override-reasons"  # namespace identifier only, not a resolvable URL
 Resource = dict[str, Any]
 
 

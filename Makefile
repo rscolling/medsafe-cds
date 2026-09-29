@@ -20,7 +20,9 @@ lint:            ## ruff, mypy --strict, eslint, tsc
 	cd frontend && npm run lint && npm run typecheck
 
 e2e:             ## Playwright e2e (starts backend on fixtures/recorded data + built UI)
-	cd frontend && npx playwright install chromium >/dev/null 2>&1 || true
+	@# Browser: set PLAYWRIGHT_CHROME_PATH to use an installed Chrome/Chromium and skip the download;
+	@# otherwise Playwright's chromium is installed here (a failed download stops the target, it is not swallowed).
+	cd frontend && if [ -z "$$PLAYWRIGHT_CHROME_PATH" ]; then npx playwright install chromium; fi
 	cd frontend && npx playwright test
 
 compare:         ## baseline vs context-aware alert counts (labeled illustrative on synthetic data)
@@ -36,7 +38,7 @@ demo-local:      ## demo without Docker
 	./scripts/demo.sh --local
 
 security:        ## dependency + code scanning (pip-audit, bandit, npm audit)
-	cd backend && .venv/bin/pip-audit --skip-editable || true
+	cd backend && .venv/bin/pip-audit --skip-editable
 	cd backend && .venv/bin/bandit -q -r app
 	cd frontend && npm audit --audit-level=high
 

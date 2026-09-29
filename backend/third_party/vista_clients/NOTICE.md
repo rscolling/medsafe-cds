@@ -14,3 +14,6 @@
    raised a truncated `RPCError('\nNo Data Foun')`. When the transport saw the success prefix the payload
    is now always treated as data.
 3. `rpc/broker.py`: passes that flag to `parse_response`.
+4. `rpc/broker.py`: removed the built-in fallback demo credentials. `_resolve_credentials` now raises
+   `AuthenticationError` unless codes are passed explicitly or set via `VISTA_ACCESS_CODE` / `VISTA_VERIFY_CODE`,
+   so no credential is hard-coded anywhere in this repository (the public VEHU demo pair lives only in `.env.example`).

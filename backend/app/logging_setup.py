@@ -6,6 +6,7 @@ import contextvars
 import hashlib
 import json
 import logging
+import re
 import sys
 from datetime import UTC, datetime
 
@@ -44,3 +45,25 @@ def configure_logging(level: str = "INFO") -> None:
 def pseudonymize(value: str, salt: str) -> str:
     """Stable, non-reversible id for logs/audit (still synthetic data, but habits matter)."""
     return hashlib.sha256(f"{salt}:{value}".encode()).hexdigest()[:12]
+
+
+_DIGITS = re.compile(r"\d{5,}")
+
+
+def redact_error(exc: BaseException, *identifiers: str) -> str:
+    """Error text that is safe for logs and the audit table.
+
+    Exception messages can carry patient ids (DFNs, FHIR ids) or RPC parameters. Known identifiers are
+    replaced by ``<id>``, any run of 5+ digits by ``<n>``, and the result is length-capped. The exception
+    class name is always kept so the failure stays diagnosable.
+    """
+    text = str(exc)
+    for ident in sorted({i for i in identifiers if i}, key=len, reverse=True):
+        text = text.replace(ident, "<id>")
+    text = _DIGITS.sub("<n>", text)
+    return f"{type(exc).__name__}: {text}"[:200]
+
+
+def short_hash(value: str) -> str:
+    """Non-reversible short fingerprint for free text (order names) that should not appear in logs."""
+    return hashlib.sha256(value.encode()).hexdigest()[:10]

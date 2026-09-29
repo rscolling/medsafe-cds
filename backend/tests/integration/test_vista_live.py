@@ -78,3 +78,19 @@ def test_live_same_rule_fires_for_vehu_and_twin(live: VistaAdapter) -> None:
         assert [a.rule_id for a in res.result.alerts] == ["metformin-low-egfr"], dfn
     ctx = svc.load_context("vista", "100881")
     assert ctx.latest_lab("egfr").source == "computed"  # type: ignore[union-attr]  # VEHU has no eGFR
+
+
+@pytest.mark.parametrize("dfn", ["99999999", "0"])
+def test_live_nonexistent_patient_is_source_unavailable_not_empty_record(live: VistaAdapter, dfn: str) -> None:
+    """VEHU answers ORWPT SELECT with '-1^...unknown to CPRS' for a missing DFN; that must not look like 'no data'."""
+    from app.adapters.base import SourceUnavailableError
+
+    with pytest.raises(SourceUnavailableError):
+        live.get_patient(dfn)
+
+
+def test_live_garbage_patient_id_never_reaches_the_broker(live: VistaAdapter) -> None:
+    from app.adapters.base import SourceUnavailableError
+
+    with pytest.raises(SourceUnavailableError, match="invalid VistA patient id"):
+        live.get_patient("abc")

@@ -42,9 +42,9 @@ _REDACT_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Built-in demonstration credentials (PROGRAMMER,ONE)
-_DEFAULT_ACCESS = "PRO1234"
-_DEFAULT_VERIFY = "PRO1234!!"
+# medsafe-cds patch: upstream shipped built-in demo credentials as a fallback. They were removed here so that no
+# credential (even the public VEHU demo pair) is hard-coded: pass them explicitly or set VISTA_ACCESS_CODE /
+# VISTA_VERIFY_CODE.
 
 
 def _redact(msg: str) -> str:
@@ -171,7 +171,7 @@ class VistABroker:
         Credential resolution order:
         1. Explicit arguments (if both provided)
         2. Environment variables VISTA_ACCESS_CODE / VISTA_VERIFY_CODE
-        3. Built-in demonstration defaults (PRO1234 / PRO1234!!)
+        3. (medsafe-cds patch) no built-in defaults: raises AuthenticationError
 
         Args:
             access_code: VistA Access Code (optional).
@@ -387,4 +387,6 @@ class VistABroker:
         if env_ac and env_vc:
             return env_ac, env_vc, CredentialSource.ENVIRONMENT
 
-        return _DEFAULT_ACCESS, _DEFAULT_VERIFY, CredentialSource.DEFAULT
+        raise AuthenticationError(
+            "no VistA credentials: pass access/verify codes or set VISTA_ACCESS_CODE and VISTA_VERIFY_CODE"
+        )

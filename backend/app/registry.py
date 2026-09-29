@@ -48,7 +48,13 @@ def build_vista(settings: Settings, client: RpcClient | None = None, mode: str |
         have_creds = bool(settings.vista_access and settings.vista_verify)
         if chosen == "auto":
             chosen = "live" if (have_creds and _live_reachable(settings)) else "recorded"
-            logger.info("VistA mode auto-selected: %s", chosen)
+            if chosen == "live":
+                logger.info("VistA mode auto-selected: live")
+            else:
+                logger.warning(
+                    "VistA mode auto-selected: recorded (broker unreachable or VISTA_* credentials unset): "
+                    "serving RECORDED replies, not a live VistA"
+                )
         if chosen == "live":
             if not have_creds:
                 raise RuntimeError("VISTA_ACCESS_CODE / VISTA_VERIFY_CODE must be set for live VistA mode")

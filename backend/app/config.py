@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -12,6 +13,13 @@ REPO_ROOT = Path(os.environ.get("MEDSAFE_ROOT") or Path(__file__).resolve().pare
 
 def _env(name: str, default: str = "") -> str:
     return os.environ.get(name, default)
+
+
+DEFAULT_SALT = "dev-only-salt"
+
+
+class InsecureConfigError(RuntimeError):
+    """Raised at startup when MEDSAFE_ENV=production and a required hardening setting is missing."""
 
 
 @dataclass(frozen=True)
@@ -37,9 +45,15 @@ class Settings:
     vista_timeout_s: float = field(default_factory=lambda: float(_env("MEDSAFE_VISTA_TIMEOUT_S", "8")))
     vista_cache_ttl_s: float = field(default_factory=lambda: float(_env("MEDSAFE_VISTA_CACHE_TTL_S", "60")))
 
+    # "dev" (default): insecure defaults allowed but logged loudly. "production": refuse to start without
+    # MEDSAFE_AUDIT_API_KEY and a non-default MEDSAFE_PSEUDONYM_SALT.
+    env: str = field(default_factory=lambda: _env("MEDSAFE_ENV", "dev").lower())
+    max_body_bytes: int = field(default_factory=lambda: int(_env("MEDSAFE_MAX_BODY_BYTES", str(1_000_000))))
+    max_draft_orders: int = field(default_factory=lambda: int(_env("MEDSAFE_MAX_DRAFT_ORDERS", "50")))
+
     audit_db: str = field(default_factory=lambda: _env("MEDSAFE_AUDIT_DB", "audit.sqlite3"))
     audit_api_key: str = field(default_factory=lambda: _env("MEDSAFE_AUDIT_API_KEY"))
-    pseudonym_salt: str = field(default_factory=lambda: _env("MEDSAFE_PSEUDONYM_SALT", "dev-only-salt"))
+    pseudonym_salt: str = field(default_factory=lambda: _env("MEDSAFE_PSEUDONYM_SALT", DEFAULT_SALT))
 
     rate_limit_per_minute: int = field(default_factory=lambda: int(_env("MEDSAFE_RATE_LIMIT_PER_MINUTE", "120")))
     cors_origins: tuple[str, ...] = field(
@@ -50,3 +64,28 @@ class Settings:
     log_level: str = field(default_factory=lambda: _env("MEDSAFE_LOG_LEVEL", "INFO"))
     # Exposes a CSV of VEHU patients that must never be used in demos (junk 1,430-order patient).
     vista_excluded_dfns: tuple[str, ...] = ("100897",)
+
+    def security_findings(self) -> list[str]:
+        """Human-readable list of insecure settings (empty when hardened)."""
+        findings: list[str] = []
+        if not self.audit_api_key:
+            findings.append(
+                "MEDSAFE_AUDIT_API_KEY is not set: /api/audit, /api/audit/summary, /metrics, /docs and /openapi.json "
+                "are open to anyone who can reach this port"
+            )
+        if self.pseudonym_salt == DEFAULT_SALT or len(self.pseudonym_salt) < 16:
+            findings.append(
+                "MEDSAFE_PSEUDONYM_SALT is the built-in default (or shorter than 16 chars): pseudonymised ids in "
+                "logs/audit can be reversed by brute force"
+            )
+        return findings
+
+    def enforce_security(self, log: logging.Logger) -> None:
+        """production: raise on insecure settings; dev: log them loudly. Never a silent pass."""
+        findings = self.security_findings()
+        if not findings:
+            return
+        if self.env == "production":
+            raise InsecureConfigError("refusing to start with MEDSAFE_ENV=production: " + "; ".join(findings))
+        for f in findings:
+            log.warning("INSECURE DEV DEFAULT (do not expose this service beyond localhost): %s", f)

@@ -42,6 +42,17 @@ flowchart LR
 - Per-patient TTL cache (60 s) avoids repeating RPCs across the hook calls of one ordering session.
 - In-process token-bucket rate limit (429 + `Retry-After`), `/health` `/ready` `/metrics` exempt.
 
+## Input handling and hardening
+
+- Request payloads are untrusted: nested FHIR fields are type-checked before use, an unusable request or any
+  evaluation error fails open (`{"cards": []}` + `X-Medsafe-Degraded`, redacted log line, `source_error` audit row).
+  A 422 lists field locations only and never echoes the submitted body.
+- Bodies over 1 MB get 413; more than 50 draft orders get 422. VistA patient ids must be digits, and a broker
+  reply of "Patient is unknown" is an error (fail open), never an empty record that would produce a "no eGFR" card.
+- `MEDSAFE_ENV=production` refuses to start without `MEDSAFE_AUDIT_API_KEY` and a non-default
+  `MEDSAFE_PSEUDONYM_SALT`; in dev the same gaps produce startup warnings. The key also protects `/metrics` and
+  switches `/docs` off. See the README section "Security and exposure".
+
 ## Privacy
 
 Audit rows hold a salted pseudonym of the patient id, rule id/version, outcome, and override code. Free-text

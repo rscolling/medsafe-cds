@@ -16,8 +16,28 @@ logger = logging.getLogger("medsafe.context")
 Resource = dict[str, Any]
 
 
-def parse_date(value: str | None) -> date | None:
-    if not value:
+def _d(value: Any) -> Resource:
+    """Defensive: request payloads are untrusted, so anything that is not an object becomes ``{}``."""
+    return value if isinstance(value, dict) else {}
+
+
+def _dicts(value: Any) -> list[Resource]:
+    """Defensive: the object items of a list (anything else is ignored)."""
+    return [v for v in value if isinstance(v, dict)] if isinstance(value, list) else []
+
+
+def _num(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return None
+    return out if out == out and out not in (float("inf"), float("-inf")) else None  # noqa: PLR0124 - NaN check
+
+
+def parse_date(value: Any) -> date | None:
+    if not value or not isinstance(value, str):
         return None
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
@@ -37,15 +57,17 @@ def drug_from_codeable(
 ) -> DrugRef:
     """Map a FHIR CodeableConcept (RxNorm coding preferred, free text fallback) to a DrugRef."""
     mapper = mapper or default_mapper()
-    concept = concept or {}
-    text = concept.get("text") or ""
+    concept = _d(concept)
+    raw_text = concept.get("text")
+    text = raw_text if isinstance(raw_text, str) else ""
     strength: float | None = None
     rxcui: str | None = None
-    for coding in concept.get("coding", []):
+    for coding in _dicts(concept.get("coding")):
         if coding.get("system") != RXNORM_SYSTEM:
             continue
         code = str(coding.get("code", ""))
-        text = text or coding.get("display", "")
+        display = coding.get("display")
+        text = text or (display if isinstance(display, str) else "")
         scd = clinical_drugs().get(code)
         if scd:
             rxcui, strength = scd[0], scd[1]
@@ -84,11 +106,13 @@ def drug_from_codeable(
 
 
 def _dose_mg(med_request: Resource) -> float | None:
-    for di in med_request.get("dosageInstruction", []):
-        for dr in di.get("doseAndRate", []):
-            q = dr.get("doseQuantity", {})
-            if q.get("unit") in {"mg", "MG"} and "value" in q:
-                return float(q["value"])
+    for di in _dicts(med_request.get("dosageInstruction")):
+        for dr in _dicts(di.get("doseAndRate")):
+            q = _d(dr.get("doseQuantity"))
+            if q.get("unit") in {"mg", "MG"}:
+                value = _num(q.get("value"))
+                if value is not None:
+                    return value
     return None
 
 
@@ -97,12 +121,13 @@ def order_from_resource(med_request: Resource, mapper: DrugMapper | None = None)
         med_request.get("medicationCodeableConcept"),
         mapper,
         dose_mg=_dose_mg(med_request),
-        order_id=med_request.get("id"),
+        order_id=str(med_request["id"]) if isinstance(med_request.get("id"), str | int) else None,
     )
 
 
 def _condition_key(cond: Resource) -> tuple[str, str] | None:
-    for coding in cond.get("code", {}).get("coding", []):
+    code_cc = _d(cond.get("code"))
+    for coding in _dicts(code_cc.get("coding")):
         system, code = coding.get("system"), str(coding.get("code", ""))
         key = None
         if system == codes.SNOMED:
@@ -110,25 +135,30 @@ def _condition_key(cond: Resource) -> tuple[str, str] | None:
         elif system == codes.ICD9CM:
             key = codes.condition_key_from_icd9(code)
         if key:
-            return key, coding.get("display") or cond.get("code", {}).get("text", key)
+            label = coding.get("display") or code_cc.get("text") or key
+            return key, label if isinstance(label, str) else key
     return None
 
 
 def _is_active(res: Resource) -> bool:
-    status = res.get("clinicalStatus", {}).get("coding", [{}])[0].get("code")
+    codings = _dicts(_d(res.get("clinicalStatus")).get("coding"))
+    status = codings[0].get("code") if codings else None
     return status in (None, "active", "recurrence", "relapse")
 
 
 def _observation_lab(obs: Resource) -> tuple[str, LabValue] | None:
-    q = obs.get("valueQuantity")
+    q = _d(obs.get("valueQuantity"))
     when = parse_date(obs.get("effectiveDateTime"))
-    if not q or "value" not in q or when is None:
+    number = _num(q.get("value"))
+    if number is None or when is None:
         return None
-    for coding in obs.get("code", {}).get("coding", []):
-        if coding.get("system") == codes.LOINC and coding.get("code") in codes.LAB_KEY_BY_LOINC:
-            key = codes.LAB_KEY_BY_LOINC[coding["code"]]
-            value = float(q["value"])
-            unit = q.get("unit") or q.get("code") or ""
+    for coding in _dicts(_d(obs.get("code")).get("coding")):
+        loinc = coding.get("code")
+        if coding.get("system") == codes.LOINC and isinstance(loinc, str) and loinc in codes.LAB_KEY_BY_LOINC:
+            key = codes.LAB_KEY_BY_LOINC[loinc]
+            value = number
+            raw_unit = q.get("unit") or q.get("code") or ""
+            unit = raw_unit if isinstance(raw_unit, str) else ""
             if key == "weight" and unit.lower() in {"lb", "[lb_av]", "lbs"}:
                 value, unit = round(value * 0.45359237, 2), "kg"
             return key, LabValue(when, value, unit, "reported")
@@ -155,6 +185,9 @@ def build_context(
       * ``today``: wall-clock date (what a production deployment would use).
     """
     mapper = mapper or default_mapper()
+    if not isinstance(patient, dict):
+        raise ValueError("patient resource must be an object")
+    medications, conditions, observations = _dicts(medications), _dicts(conditions), _dicts(observations)
     labs: dict[str, list[LabValue]] = {}
     newest: date | None = None
     for obs in observations:
@@ -171,8 +204,8 @@ def build_context(
         as_of = newest if (as_of_policy == "anchored" and newest) else datetime.now(UTC).date()
 
     birth = parse_date(patient.get("birthDate"))
-    sex = patient.get("gender", "unknown")
-    sex = sex if sex in {"male", "female"} else "unknown"
+    gender = patient.get("gender", "unknown")
+    sex = gender if isinstance(gender, str) and gender in {"male", "female"} else "unknown"
 
     # Reported eGFR always wins; otherwise derive from creatinine (VistA has no eGFR at all).
     if "egfr" not in labs and "creatinine" in labs and birth and sex != "unknown":
@@ -186,7 +219,7 @@ def build_context(
             labs["egfr"] = computed
 
     ctx = PatientContext(
-        patient_id=str(patient.get("id", "")),
+        patient_id=str(patient.get("id", ""))[:64],
         source=source,
         sex=sex,
         birth_date=birth,
@@ -203,7 +236,8 @@ def build_context(
         if med.get("status") not in (None, "active", "on-hold", "draft", "unknown"):
             continue
         concept = med.get("medicationCodeableConcept")
-        drug = drug_from_codeable(concept, mapper, order_id=med.get("id"))
+        med_id = med.get("id")
+        drug = drug_from_codeable(concept, mapper, order_id=med_id if isinstance(med_id, str) else None)
         if drug.mapped:
             ctx.meds.append(drug)
         else:

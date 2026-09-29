@@ -8,5 +8,13 @@ PROTOTYPE, NOT CLINICAL ADVICE. Synthetic data only. See DISCLAIMER.md.
 Third-party software included in this repository:
 - backend/third_party/vista_clients: fork of CivicActions/vista-clients (Apache-2.0,
   Copyright 2025 Owen Barton). Modifications are listed in backend/third_party/vista_clients/NOTICE.md.
-- data/vista/recorded and backend/tests/fixtures/vehu_real_replies.json: replies recorded from the public
-  WorldVistA VEHU Docker image (synthetic training database, no real patients).
+- data/vista/recorded, data/vista/demo_patients.json and backend/tests/fixtures/vehu_real_replies.json: replies
+  recorded from the public WorldVistA VEHU Docker image (https://hub.docker.com/r/worldvista/vehu), a VistA
+  demonstration database with synthetic patients. VistA itself was developed by the U.S. Department of Veterans
+  Affairs and is distributed through the VA FOIA release (public-domain U.S. Government work); the WorldVistA
+  VEHU source repository (https://github.com/WorldVistA/VistA-VEHU-M) is Apache-2.0 and states that it is
+  redacted (CPT codes, First Databank drug data and the VA cipher are removed). The image is marked "not for
+  production use". The recorded replies contain only synthetic VEHU records (the placeholder SSN field is blanked).
+  Confirm the current terms on those pages before redistributing further; this is not legal advice.
+- data/mapping/*.csv: small hand-made lookup tables that reference third-party code systems. See
+  data/mapping/README.md for the LOINC, SNOMED CT and RxNorm terms that apply.

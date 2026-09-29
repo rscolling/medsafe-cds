@@ -22,4 +22,4 @@ backend/.venv/bin/python -m uvicorn app.api.app:app_factory --factory --app-dir 
 BACK=$!
 trap 'kill $BACK 2>/dev/null || true' EXIT
 echo ">> UI: http://localhost:4173   API: http://localhost:8080/docs"
-cd frontend && VITE_BACKEND_URL=http://localhost:8080 npm run preview -- --host 0.0.0.0
+cd frontend && VITE_BACKEND_URL=http://localhost:8080 npm run preview -- --host 127.0.0.1

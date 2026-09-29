@@ -32,6 +32,11 @@ dev = [
 pythonpath = [".", "third_party"]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
+filterwarnings = [
+  # Third-party notice about the TestClient transport; not actionable in this repo.
+  "ignore:Using `httpx` with `starlette.testclient` is deprecated:DeprecationWarning",
+  "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
 markers = [
   "integration: needs external containers (HAPI FHIR and/or VEHU VistA); skipped when unavailable",
   "hapi: needs a local HAPI FHIR server",

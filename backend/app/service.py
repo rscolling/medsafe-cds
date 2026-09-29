@@ -9,6 +9,7 @@ from typing import Any
 
 from app.adapters.base import PatientSource, SourceUnavailableError
 from app.context import build_context, order_from_resource
+from app.logging_setup import short_hash
 from app.mapping.drugs import clinical_drugs, default_mapper
 from app.model import DrugRef, EvaluationResult, PatientContext
 from app.rules.engine import RulesEngine
@@ -59,7 +60,10 @@ class CdsService:
     def evaluate_ctx(self, ctx: PatientContext, draft: Resource, mode: str) -> Evaluated:
         order = order_from_resource(draft, default_mapper())
         if not order.mapped:
-            logger.warning("draft order could not be mapped to an ingredient", extra={"order": order.raw})
+            logger.warning(
+                "draft order could not be mapped to an ingredient",
+                extra={"order_fingerprint": short_hash(order.raw), "order_len": len(order.raw)},
+            )
             return Evaluated(ctx, order, EvaluationResult(mode, ()))
         return Evaluated(ctx, order, self.engine.evaluate(ctx, order, mode))
 

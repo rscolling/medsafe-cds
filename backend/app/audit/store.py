@@ -36,6 +36,28 @@ CREATE TABLE IF NOT EXISTS audit_events (
 CREATE INDEX IF NOT EXISTS idx_audit_kind ON audit_events(kind);
 CREATE INDEX IF NOT EXISTS idx_audit_card ON audit_events(card_uuid);
 """
+_COLUMN_ORDER = (
+    "ts",
+    "kind",
+    "request_id",
+    "hook_instance",
+    "patient_pseudo",
+    "source",
+    "mode",
+    "rule_id",
+    "rule_version",
+    "card_uuid",
+    "outcome",
+    "override_code",
+    "comment_sha256",
+    "comment_len",
+    "detail",
+)
+_INSERT = (
+    "INSERT INTO audit_events (ts, kind, request_id, hook_instance, patient_pseudo, source, mode, rule_id, "
+    "rule_version, card_uuid, outcome, override_code, comment_sha256, comment_len, detail) "
+    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+)
 _COLUMNS = frozenset(
     {
         "ts",
@@ -70,10 +92,8 @@ class AuditStore:
         if unknown:
             raise ValueError(f"unknown audit column(s): {sorted(unknown)}")
         cols.setdefault("ts", datetime.now(UTC).isoformat(timespec="milliseconds"))
-        keys = ", ".join(cols)
-        marks = ", ".join("?" for _ in cols)
         with self._lock:
-            self._conn.execute(f"INSERT INTO audit_events ({keys}) VALUES ({marks})", tuple(cols.values()))  # noqa: S608  # nosec B608 - column names validated against _COLUMNS above
+            self._conn.execute(_INSERT, tuple(cols.get(c) for c in _COLUMN_ORDER))
             self._conn.commit()
 
     def record_alert(

@@ -11,7 +11,7 @@ class CdsRequest(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     hook: str
-    hookInstance: str = Field(min_length=8)
+    hookInstance: str = Field(min_length=8, max_length=128)
     fhirServer: str | None = None
     context: dict[str, Any]
     prefetch: dict[str, Any] | None = None

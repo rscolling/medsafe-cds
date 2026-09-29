@@ -45,7 +45,8 @@ def run_cohort(service: CdsService, source: str, patient_ids: list[str], order_k
     for pid in patient_ids:
         try:
             ctx = service.load_context(source, pid)
-        except Exception:  # noqa: BLE001, S112  # nosec B112 - unreachable/unmappable patient: skip
+        # Unreachable or unmappable patients are skipped on purpose.
+        except Exception:  # noqa: BLE001, S112  # nosec B112
             continue
         for key in order_keys or CANDIDATE_ORDERS:
             draft = med_resource(pid, key, status="draft", idx=99)

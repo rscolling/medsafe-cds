@@ -34,7 +34,7 @@ class FixtureStore:
     def resources(self, pid: str, rtype: str) -> list[Resource]:
         doc = self.docs.get(pid)
         if doc is None:
-            raise SourceUnavailableError(f"unknown patient {pid}")
+            raise SourceUnavailableError("unknown patient")
         return [r for r in doc["resources"] if r["resourceType"] == rtype]
 
 
@@ -55,7 +55,9 @@ class FhirAdapter:
         self._base = base_url.rstrip("/")
         self._client = client or httpx.Client(timeout=timeout_s)
         self._demo_ids = demo_ids
+        self.requested_mode = mode
         self.mode = self._resolve_mode(mode)
+        self.fell_back = mode == "auto" and self.mode == "fixtures"
 
     def _resolve_mode(self, mode: str) -> str:
         if mode in {"http", "fixtures"}:
@@ -66,7 +68,11 @@ class FhirAdapter:
             logger.info("HAPI FHIR reachable at %s; using it", self._base)
             return "http"
         except httpx.HTTPError as exc:
-            logger.warning("HAPI FHIR not reachable (%s); falling back to in-repo fixtures", exc)
+            logger.warning(
+                "MEDSAFE_FHIR_MODE=auto: HAPI FHIR not reachable (%s). SERVING BUNDLED FIXTURES instead; a FHIR outage "
+                "will NOT fail open in this mode. Set MEDSAFE_FHIR_MODE=http or fixtures to be explicit.",
+                exc,
+            )
             return "fixtures"
 
     # ------------------------------------------------------------ http helpers
@@ -130,6 +136,8 @@ class FhirAdapter:
             "mode": self.mode,
             "base_url": self._base,
             "patients": len(self._store.docs),
+            "requested_mode": self.requested_mode,
+            "fell_back_to_fixtures": self.fell_back,
         }
         if self.mode == "http":
             try:

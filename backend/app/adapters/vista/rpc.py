@@ -110,7 +110,7 @@ class RecordedRpcClient:
     def call(self, rpc: str, *params: str) -> str:
         entry = self._index.get(call_key(rpc, tuple(str(p) for p in params)))
         if entry is None:
-            raise VistaUnavailableError(f"no recorded reply for {rpc} {params!r}")
+            raise VistaUnavailableError(f"no recorded reply for {rpc}")
         return entry["reply"]
 
     def known_calls(self) -> list[tuple[str, tuple[str, ...]]]:

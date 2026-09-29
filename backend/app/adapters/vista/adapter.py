@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import threading
 import time
 from dataclasses import dataclass
@@ -30,6 +31,7 @@ logger = logging.getLogger("medsafe.vista")
 
 MAX_LAB_SETS = 30  # safety cap on backwards paging (VEHU max observed for real patients ~60)
 FAR_FUTURE_FM = "3300101"
+_DFN_RE = re.compile(r"[0-9]{1,12}")
 
 
 @dataclass
@@ -67,7 +69,7 @@ class OverlayRpcClient:
     def call(self, rpc: str, *params: str) -> str:
         p = self._patients.get(params[0]) if params else None
         if p is None:
-            raise VistaUnavailableError(f"unknown overlay patient for {rpc} {params!r}")
+            raise VistaUnavailableError(f"unknown overlay patient for {rpc}")
         if rpc == "ORWLRR INTERIMG":
             before = params[1]
             sets = sorted(p.replies.get("labs", []), key=lambda s: s.split("^")[2], reverse=True)
@@ -118,8 +120,10 @@ class VistaAdapter:
         return self._overlay_client if patient_id in self._overlay else self._client
 
     def _bundle(self, patient_id: str) -> _Bundle:
+        if not _DFN_RE.fullmatch(patient_id):
+            raise SourceUnavailableError("invalid VistA patient id (DFN must be digits)")
         if patient_id in self._excluded:
-            raise SourceUnavailableError(f"DFN {patient_id} is excluded from demos (junk data)")
+            raise SourceUnavailableError("patient is excluded from demos (junk data)")
         with self._lock:
             hit = self._cache.get(patient_id)
             if hit and time.monotonic() - hit.fetched_at < self._ttl:
@@ -127,6 +131,8 @@ class VistaAdapter:
         try:
             bundle = self._fetch(patient_id)
         except VistaUnavailableError as exc:
+            raise SourceUnavailableError(str(exc)) from exc
+        except ValueError as exc:  # nonexistent patient / unparseable reply: never guess, never "no data"
             raise SourceUnavailableError(str(exc)) from exc
         with self._lock:
             self._cache[patient_id] = bundle
@@ -147,7 +153,7 @@ class VistaAdapter:
         try:
             observations += parsing.parse_weight(dfn, rpc.call("ORQQVI VITALS", dfn, "", ""))
         except VistaUnavailableError:
-            logger.debug("no recorded vitals for %s", dfn)
+            logger.debug("no recorded vitals")
         return _Bundle(patient, meds, problems, observations, time.monotonic())
 
     def _fetch_labs(self, rpc: RpcClient, dfn: str) -> list[Resource]:

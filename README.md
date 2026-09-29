@@ -20,8 +20,38 @@ make demo-local      # no Docker: fixtures + recorded real VEHU replies; UI on :
 docker compose up --build          # HAPI + loader + backend + UI on http://localhost:5173
 ```
 
-Local setup: `scripts/setup.sh` (needs Python 3.12 via `uv` or `python3.12`, and Node 20+). Then
-`make test`, `make lint`, `make compare`, `make test-integration`.
+Local setup: `scripts/setup.sh` (needs Python 3.12 via `uv` or `python3.12`, and Node 22 as used in CI and pinned
+in `.nvmrc`; Node 20.19+ also works and was used for the local runs reported below). Then:
+
+| command | what it does |
+|---|---|
+| `make test` | backend unit + contract tests with the 85% coverage gate |
+| `make lint` | ruff, ruff format check, `mypy app` (strict), eslint, `tsc` (does not build the UI) |
+| `cd frontend && npm run build` | type-check and production build of the UI (also run by CI) |
+| `make e2e` | Playwright end-to-end tests against the built UI and a real API on fixtures/recorded data. It runs `npx playwright install chromium` first and **stops if that download fails**. To use an already-installed Chrome/Chromium instead, set `PLAYWRIGHT_CHROME_PATH=/path/to/chrome` (the install step is then skipped). Run `npm run build` first if `frontend/dist` is missing |
+| `make compare` | baseline vs context-aware alert counts |
+| `make test-integration` | opt-in tests that need the HAPI and/or VEHU containers; skipped when they are down |
+| `make security` | pip-audit, bandit, npm audit |
+
+## Security and exposure: do not expose this service
+
+This is a **localhost prototype**. Do not put it on a network, and never load real patient data.
+
+- `docker-compose.yml` binds every port to `127.0.0.1`. `make demo-local` binds the API to localhost by default.
+- With no configuration the service logs a loud `INSECURE DEV DEFAULT` warning at startup: `/api/audit`,
+  `/api/audit/summary`, `/metrics` and `/docs` are open, and patient ids in logs/audit are pseudonymised with a
+  public default salt (trivially reversible).
+- Set `MEDSAFE_AUDIT_API_KEY` to protect `/api/audit*` and `/metrics` (send it as `X-API-Key`) and to switch off
+  `/docs` and `/openapi.json`. `/health` and `/ready` stay open for probes. Set `MEDSAFE_PSEUDONYM_SALT` (16+
+  random characters).
+- Set `MEDSAFE_ENV=production` and the app **refuses to start** unless both of the above are set. This enforces
+  the two settings; it does not make the prototype production-ready (no TLS, no user authentication on the hook
+  endpoints, in-process rate limiting).
+- Request bodies are capped at 1 MB (`MEDSAFE_MAX_BODY_BYTES`, 413) and at 50 draft orders per request
+  (`MEDSAFE_MAX_DRAFT_ORDERS`, 422). Malformed or hostile payloads fail open (`{"cards": []}` with an
+  `X-Medsafe-Degraded` header) or return a 422 that does not echo the request body.
+- Logs and the audit table never contain raw patient ids or order text: ids are pseudonymised, error text is
+  redacted, free-text order names are logged as a short hash and length only.
 
 ## What is in the box
 
@@ -47,8 +77,11 @@ prefetch is also accepted. Operational endpoints: `/health`, `/ready`, `/metrics
 - **Real VA / production VistA connections are out of scope.** The VistA adapter is built and verified only
   against the public **WorldVistA VEHU** training image on localhost.
 - **The VEHU sign-on codes are public demo credentials** published on the image's Docker Hub page for a
-  synthetic training database. They are not secrets. They are kept in `.env.example` / environment variables,
-  never in code; get them from <https://hub.docker.com/r/worldvista/vehu>.
+  synthetic training database. They are not secrets. The application and the vendored client read them only
+  from environment variables (`VISTA_ACCESS_CODE` / `VISTA_VERIFY_CODE`); the vendored client's upstream built-in
+  fallback was removed (see `backend/third_party/vista_clients/NOTICE.md`), so no credential is hard-coded in
+  code. The public pair appears in `.env.example` (and in test/recorded-capture setup that copies it) and is
+  listed at <https://hub.docker.com/r/worldvista/vehu>.
 - **Prototype on synthetic data. Not clinical advice.** Rule thresholds are the author's interpretation of
   public labels and literature, with no clinician review.
 - **FHIR-on-VistA was evaluated and skipped**: it needs the old `worldvista/vehu:201911-syn-fhir` image
@@ -58,17 +91,17 @@ prefetch is also accepted. Operational endpoints: `/health`, `/ready`, `/metrics
 
 ## Verification status (what was actually run)
 
-Run on the author's dev box (Debian, Python 3.12.14 via uv, Node 22) on 2026-09-29:
+Run on the author's dev box (Debian, Python 3.12.14 via uv, Node 20.19.2) on 2026-09-29:
 
 | check | result |
 |---|---|
-| backend unit + contract tests (`make test`) | 184 passed, 18 integration tests deselected; coverage 96.94% (gate 85%) |
+| backend unit + contract tests (`make test`) | 239 passed, 18 integration tests deselected; coverage 97.02% (gate 85%) (after the QA hardening pass) |
 | `ruff check` / `ruff format --check` / `mypy app` (strict) | clean |
 | integration tests with HAPI v7.4.0 and live VEHU up | 18 passed (skip cleanly otherwise) |
 | live VEHU verification | RPCs ORWPT SELECT, ORWPS ACTIVE, ORQQPL LIST, ORWLRR NEWOLD/INTERIMG, ORQQVI VITALS work through the patched client; live output matches the recorded fixtures |
 | frontend eslint, tsc, build | clean |
 | Playwright e2e (system Chrome) | 7 passed |
-| Docker images | backend + frontend images build; backend image serves `/health` and CDS Hooks discovery |
+| Docker images | backend + frontend images build; backend image serves `/health` and CDS Hooks discovery (this check predates the hardening pass below and was not repeated) |
 | `docker-compose.yml` | parsed and images built with compose v2.29.7; **the full stack was not verified end to end here**: on this sandbox the bridge network could not route container-to-container traffic (the loader could not reach HAPI), so compose is unverified as a running system |
 | GitHub Actions workflow | **not run** (no runner); its commands were run locally |
 

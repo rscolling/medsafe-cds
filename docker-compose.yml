@@ -6,7 +6,7 @@ name: medsafe-cds
 services:
   hapi:
     image: hapiproject/hapi:v7.4.0
-    ports: ["8090:8080"]
+    ports: ["127.0.0.1:8090:8080"]
     environment:
       hapi.fhir.fhir_version: R4
       hapi.fhir.default_encoding: json
@@ -29,7 +29,7 @@ services:
 
   backend:
     build: { context: ., dockerfile: Dockerfile.backend }
-    ports: ["8080:8080"]
+    ports: ["127.0.0.1:8080:8080"]
     environment:
       MEDSAFE_FHIR_MODE: http
       MEDSAFE_FHIR_BASE_URL: http://hapi:8080/fhir
@@ -40,20 +40,22 @@ services:
       VISTA_ACCESS_CODE: ${VISTA_ACCESS_CODE:-}
       VISTA_VERIFY_CODE: ${VISTA_VERIFY_CODE:-}
       MEDSAFE_CORS_ORIGINS: http://localhost:5173
+      # Localhost-only prototype (ports above are bound to 127.0.0.1). To expose it anywhere else set
+      # MEDSAFE_ENV=production, MEDSAFE_AUDIT_API_KEY and MEDSAFE_PSEUDONYM_SALT (the app refuses to start without them).
     volumes: ["audit:/var/lib/medsafe"]
     depends_on:
       loader: { condition: service_completed_successfully }
 
   frontend:
     build: { context: ., dockerfile: Dockerfile.frontend }
-    ports: ["5173:80"]
+    ports: ["127.0.0.1:5173:80"]
     depends_on:
       backend: { condition: service_healthy }
 
   vehu:
     profiles: ["vehu"]
     image: worldvista/vehu
-    ports: ["9430:9430"]
+    ports: ["127.0.0.1:9430:9430"]
 
 volumes:
   audit: {}
