@@ -1,0 +1,59 @@
+# One command:  docker compose up --build      (then open http://localhost:5173)
+# Optional live VistA (6.7 GB image, ~75 s to boot):  docker compose --profile vehu up --build
+# PROTOTYPE, NOT CLINICAL ADVICE. Synthetic data only.
+name: medsafe-cds
+
+services:
+  hapi:
+    image: hapiproject/hapi:v7.4.0
+    ports: ["8090:8080"]
+    environment:
+      hapi.fhir.fhir_version: R4
+      hapi.fhir.default_encoding: json
+      spring.datasource.url: "jdbc:h2:mem:medsafe"
+      JAVA_TOOL_OPTIONS: "-Xmx768m"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:8080/fhir/metadata?_summary=true' >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  loader:
+    build: { context: ., dockerfile: Dockerfile.backend }
+    command: ["python", "scripts/load_data.py", "--fhir-base", "http://hapi:8080/fhir", "--wait", "240"]
+    depends_on:
+      hapi: { condition: service_started }
+    healthcheck: { disable: true }
+    restart: "no"
+
+  backend:
+    build: { context: ., dockerfile: Dockerfile.backend }
+    ports: ["8080:8080"]
+    environment:
+      MEDSAFE_FHIR_MODE: http
+      MEDSAFE_FHIR_BASE_URL: http://hapi:8080/fhir
+      # auto = live VEHU if the vehu profile is up and credentials are set, else recorded real replies
+      MEDSAFE_VISTA_MODE: ${MEDSAFE_VISTA_MODE:-auto}
+      VISTA_HOST: ${VISTA_HOST:-vehu}
+      VISTA_PORT: ${VISTA_PORT:-9430}
+      VISTA_ACCESS_CODE: ${VISTA_ACCESS_CODE:-}
+      VISTA_VERIFY_CODE: ${VISTA_VERIFY_CODE:-}
+      MEDSAFE_CORS_ORIGINS: http://localhost:5173
+    volumes: ["audit:/var/lib/medsafe"]
+    depends_on:
+      loader: { condition: service_completed_successfully }
+
+  frontend:
+    build: { context: ., dockerfile: Dockerfile.frontend }
+    ports: ["5173:80"]
+    depends_on:
+      backend: { condition: service_healthy }
+
+  vehu:
+    profiles: ["vehu"]
+    image: worldvista/vehu
+    ports: ["9430:9430"]
+
+volumes:
+  audit: {}

@@ -1,0 +1,167 @@
+import { useEffect, useState } from 'react'
+import { api } from './api'
+import { AlertCard } from './components/AlertCard'
+import { PatientPanel } from './components/PatientPanel'
+import type { CompareResponse, Drug, PatientSummary, Source, SourceStatus } from './types'
+
+const DISCLAIMER = 'Prototype, not clinical advice. Synthetic data only. No real patients.'
+
+export default function App() {
+  const [source, setSource] = useState<Source>('fhir')
+  const [statuses, setStatuses] = useState<Partial<Record<string, SourceStatus>>>({})
+  const [patients, setPatients] = useState<PatientSummary[]>([])
+  const [drugs, setDrugs] = useState<Drug[]>([])
+  const [patientId, setPatientId] = useState('')
+  const [rxcui, setRxcui] = useState('')
+  const [result, setResult] = useState<CompareResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    api.drugs().then((d) => {
+      setDrugs(d)
+      setRxcui((cur) => cur || d[0]?.rxcui || '')
+    }).catch((e: unknown) => { setError(String(e)) })
+    api.sources().then(setStatuses).catch(() => { setStatuses({}) })
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    api
+      .patients(source)
+      .then((p) => {
+        if (cancelled) return
+        setPatients(p)
+        setPatientId(p[0]?.id ?? '')
+        setResult(null)
+      })
+      .catch((e: unknown) => { setError(String(e)) })
+    return () => {
+      cancelled = true
+    }
+  }, [source])
+
+  const prescribe = () => {
+    setBusy(true)
+    setError(null)
+    api
+      .compare(source, patientId, rxcui)
+      .then(setResult)
+      .catch((e: unknown) => { setError(e instanceof Error ? e.message : String(e)); setResult(null) })
+      .finally(() => { setBusy(false) })
+  }
+
+  const st = statuses[source]
+  const selected = patients.find((p) => p.id === patientId)
+
+  return (
+    <main>
+      <header>
+        <h1>medsafe-cds: mock order entry</h1>
+        <p className="banner" role="note" data-testid="banner">
+          {DISCLAIMER}
+        </p>
+      </header>
+
+      <section className="form" aria-label="Order entry">
+        <fieldset>
+          <legend>Data source</legend>
+          {(['fhir', 'vista'] as const).map((s) => (
+            <label key={s}>
+              <input
+                type="radio"
+                name="source"
+                value={s}
+                checked={source === s}
+                onChange={() => { setSource(s) }}
+              />{' '}
+              {s === 'fhir' ? 'FHIR R4 (HAPI)' : 'VistA (RPC Broker)'}
+            </label>
+          ))}
+          {st && (
+            <span className="source-status" data-testid="source-status">
+              mode: <strong>{st.mode}</strong>, reachable: {String(st.reachable)}
+            </span>
+          )}
+        </fieldset>
+
+        <label>
+          Patient{' '}
+          <select value={patientId} onChange={(e) => { setPatientId(e.target.value) }} aria-label="Patient">
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {selected?.note && <small className="note">{selected.note}</small>}
+
+        <label>
+          Prescribe{' '}
+          <select value={rxcui} onChange={(e) => { setRxcui(e.target.value) }} aria-label="Drug">
+            {drugs.map((d) => (
+              <option key={d.rxcui} value={d.rxcui}>
+                {d.display}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="button" onClick={prescribe} disabled={busy || !patientId || !rxcui}>
+          {busy ? 'Checking...' : 'Sign order'}
+        </button>
+      </section>
+
+      {error && (
+        <p role="alert" className="error" data-testid="error">
+          {error}
+        </p>
+      )}
+
+      {result && (
+        <>
+          <PatientPanel patient={result.patient} />
+          <h2>
+            Order: {result.order} - baseline vs context-aware
+          </h2>
+          <div className="columns" data-testid="comparison">
+            <section aria-label="Baseline" data-testid="panel-baseline">
+              <h3>
+                Baseline (drug-class match) <span className="count" data-testid="count-baseline">{result.baseline.length}</span>
+              </h3>
+              {result.baseline.length === 0 && <p className="empty">No alert.</p>}
+              {result.baseline.map((c) => (
+                <AlertCard key={c.uuid} card={c} serviceId="medsafe-order-sign-baseline" interactive={false} />
+              ))}
+            </section>
+            <section aria-label="Context-aware" data-testid="panel-context">
+              <h3>
+                Context-aware <span className="count" data-testid="count-context">{result.context.length}</span>
+              </h3>
+              {result.context.length === 0 && <p className="empty">No alert.</p>}
+              {result.context.map((c) => (
+                <AlertCard key={c.uuid} card={c} serviceId="medsafe-order-sign" />
+              ))}
+              {result.suppressed.length > 0 && (
+                <div className="suppressed" data-testid="suppressed">
+                  <strong>Suppressed by context ({result.suppressed.length})</strong>
+                  <ul>
+                    {result.suppressed.map((s) => (
+                      <li key={s.ruleId}>
+                        <code>{s.ruleId}</code>: {s.reasons.join('; ')}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          </div>
+        </>
+      )}
+
+      <footer>
+        <p>{DISCLAIMER}</p>
+      </footer>
+    </main>
+  )
+}

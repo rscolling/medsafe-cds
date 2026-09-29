@@ -1,0 +1,33 @@
+:root { font-family: system-ui, sans-serif; color: #1a1a1a; background: #f6f7f9; }
+body { margin: 0; }
+main { max-width: 1200px; margin: 0 auto; padding: 1rem 1.5rem 3rem; }
+h1 { margin: 0 0 .25rem; font-size: 1.4rem; }
+.banner { background: #fff3cd; border: 1px solid #e0c36a; padding: .5rem .75rem; border-radius: 6px; font-weight: 600; }
+.form { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; background: #fff; padding: 1rem; border-radius: 8px; border: 1px solid #dde; }
+.form fieldset { border: 1px solid #ccd; border-radius: 6px; }
+.form label { display: inline-flex; gap: .35rem; align-items: center; }
+select { max-width: 32rem; padding: .3rem; }
+button { padding: .45rem .9rem; border-radius: 6px; border: 1px solid #335; background: #234; color: #fff; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+.source-status { margin-left: 1rem; font-size: .85rem; color: #445; }
+.note { color: #556; }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+@media (max-width: 800px) { .columns { grid-template-columns: 1fr; } }
+.columns > section { background: #fff; border: 1px solid #dde; border-radius: 8px; padding: .75rem 1rem; }
+.count { display: inline-block; min-width: 1.6rem; text-align: center; background: #234; color: #fff; border-radius: 999px; padding: 0 .4rem; font-size: .85rem; }
+.card { border-left: 6px solid #888; background: #fafbfc; margin: .75rem 0; padding: .5rem .75rem; border-radius: 4px; }
+.card-info { border-color: #2b7fd4; } .card-warning { border-color: #e0a100; } .card-critical { border-color: #c62828; }
+.card-disclaimer { margin: 0; font-size: .8rem; font-weight: 700; color: #7a4b00; }
+.card-disclaimer.small { font-weight: 500; margin-top: .5rem; }
+.card-summary { margin: .25rem 0; }
+.card-meta { font-size: .85rem; color: #445; }
+.pill { padding: 0 .45rem; border-radius: 999px; font-size: .75rem; color: #fff; background: #666; }
+.pill-info { background: #2b7fd4; } .pill-warning { background: #b98400; } .pill-critical { background: #c62828; } .pill-gap { background: #6a1b9a; margin-left: .4rem; }
+.card-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.suppressed { margin-top: 1rem; padding: .5rem .75rem; background: #eef7ee; border: 1px dashed #5a9a5a; border-radius: 6px; }
+.empty { color: #667; font-style: italic; }
+.error { background: #fdecea; border: 1px solid #c62828; padding: .5rem .75rem; border-radius: 6px; }
+.patient { background: #fff; border: 1px solid #dde; border-radius: 8px; padding: .5rem 1rem; margin: 1rem 0; }
+.patient dl { display: grid; grid-template-columns: max-content 1fr; gap: .15rem 1rem; margin: 0; }
+.patient dt { color: #556; } .patient dd { margin: 0; }
+footer { margin-top: 2rem; color: #556; font-size: .85rem; }
