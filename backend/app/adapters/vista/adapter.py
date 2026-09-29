@@ -211,11 +211,14 @@ class VistaAdapter:
         (cap hit, unparseable page). It is logged, counted and tagged on the Patient, never silent.
         """
         raw_newold = rpc.call("ORWLRR NEWOLD", dfn)
-        if parsing.newold_is_garbage(raw_newold):
-            # A reply that is neither "^" (no labs) nor a FileMan pair is an error in disguise, not "no labs".
-            raise ValueError("ORWLRR NEWOLD returned an unparseable reply")
         head = parsing.newest_raw(raw_newold)
-        if not head:
+        if parsing.newold_is_garbage(raw_newold):
+            # Not "^" (no labs) and not a FileMan pair. VistA errors are already raised by the protocol layer, so this
+            # is a malformed date: never read it as "no labs" and never fail the patient; page the INTERIMG chain,
+            # which is authoritative anyway, and record the disagreement.
+            self.head_disagreements += 1
+            logger.warning("ORWLRR NEWOLD reply not parseable; paging the INTERIMG chain instead")
+        elif not head:
             return [], False
         sets: list[parsing.LabSet] = []
         before = FAR_FUTURE_FM
@@ -240,7 +243,9 @@ class VistaAdapter:
                 "lab history may be incomplete (paging cap %d or bad page): treat 'no recent lab' as unknown",
                 self._max_lab_sets,
             )
-        if sets and fileman_key(head) != fileman_key(sets[0].collected):
+        if not head:
+            pass  # NEWOLD was unparseable: already counted above
+        elif sets and fileman_key(head) != fileman_key(sets[0].collected):
             self.head_disagreements += 1
             logger.warning("ORWLRR NEWOLD newest does not match the INTERIMG chain head; using the chain")
         elif not sets:

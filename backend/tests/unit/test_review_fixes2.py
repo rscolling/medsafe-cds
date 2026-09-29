@@ -37,8 +37,8 @@ class Script:
         self.closed = True
 
 
-def lab_reply(collected: str, value: str = "1.0") -> str:
-    return f"1^CH^{collected}^72^SERUM^ACC^PROV\r\n173^CREATININE^{value}^^mg/dL^0.6 - 1.3\r\n"
+def lab_reply(collected: str, value: str = "1.0", unit: str = "mg/dL") -> str:
+    return f"1^CH^{collected}^72^SERUM^ACC^PROV\r\n173^CREATININE^{value}^^{unit}^0.6 - 1.3\r\n"
 
 
 def fm_dates(n: int) -> list[str]:
@@ -158,11 +158,13 @@ def test_l15_newold_head_disagreeing_with_chain_is_logged_and_counted(caplog: py
     assert a.head_disagreements == 1 and "does not match" in caplog.text
 
 
-def test_l15_garbage_newold_is_an_error_not_no_labs() -> None:
-    client = Script({**BASE, "ORWLRR NEWOLD": "\x18M  ERROR=whatever"})
+def test_l15_garbage_newold_never_means_no_labs_and_never_fails_the_patient(caplog: pytest.LogCaptureFixture) -> None:
+    """A malformed NEWOLD date must not hide real labs (old behaviour: 'no labs') nor fail the whole patient."""
+    client = Script({**BASE, "ORWLRR NEWOLD": "notadate^3140101.1", "ORWLRR INTERIMG": chain(["3150101.1"])})
     a = VistaAdapter(client, mode="live", demo_patients=DEMO)
-    with pytest.raises(SourceUnavailableError, match="NEWOLD"):
-        a.get_patient("1")
+    with caplog.at_level("WARNING", logger="medsafe.vista"):
+        assert len(a.get_lab_series("1")) == 1  # the INTERIMG chain is authoritative
+    assert a.head_disagreements == 1 and "not parseable" in caplog.text
 
 
 def test_l15_newold_says_labs_but_chain_empty_is_counted() -> None:
@@ -328,15 +330,15 @@ def test_m12_ui_helper_endpoints_require_the_key_when_set(service) -> None:  # t
 
 @pytest.mark.parametrize("key", ["é", "日本語", "k" * 19 + "é", "\u00ff" * 30])
 def test_l8_non_ascii_api_key_is_401_not_500(service, key: str) -> None:  # type: ignore[no-untyped-def]
-    c = client_for(service, audit_api_key="secret-key-0123456789")
+    c = client_for(service, audit_api_key="qa-auth-token-7f3a91c2")
     for path in ("/api/audit", "/api/sources", "/metrics"):
         r = c.get(path, headers={"X-API-Key": key.encode("utf-8")})  # raw UTF-8 bytes on the wire
         assert r.status_code == 401, path
 
 
 def test_l8_correct_key_still_works_and_non_ascii_secret_supported(service) -> None:  # type: ignore[no-untyped-def]
-    c = client_for(service, audit_api_key="secret-key-0123456789")
-    assert c.get("/api/audit", headers={"X-API-Key": "secret-key-0123456789"}).status_code == 200
+    c = client_for(service, audit_api_key="qa-auth-token-7f3a91c2")
+    assert c.get("/api/audit", headers={"X-API-Key": "qa-auth-token-7f3a91c2"}).status_code == 200
 
 
 @pytest.mark.parametrize("limit", ["-1", "0", "-999999", "1001", "abc"])
@@ -511,3 +513,135 @@ def test_ready_reports_source_outage(service) -> None:  # type: ignore[no-untype
     c = TestClient(create_app(s, sources={"vista": Down()}, audit=AuditStore(":memory:")))  # type: ignore[dict-item]
     r = c.get("/ready").json()
     assert r["degraded"] == ["vista"] and r["checks"]["vista"]["reachable"] is False and r["status"] == "ready"
+
+
+# ------------------------------------------------------------------------------------- final QA round
+def test_qa3_one_unparseable_lab_date_skips_that_lab_only() -> None:
+    """A collection whose FileMan date is invalid (month 13) is skipped; older good labs are still used."""
+    good_new, bad, good_old = "3150301.1", "3151301.1", "3150101.1"  # bad: month 13 is not a date
+
+    def replies(params: tuple[str, ...]) -> str:
+        before = float(params[1])
+        for c, v in ((good_new, "1.5"), (bad, "9.9"), (good_old, "1.1")):
+            if float(c) < before:
+                return lab_reply(c, v)
+        return ""
+
+    client = Script({**BASE, "ORWLRR NEWOLD": f"{good_new}^{good_old}", "ORWLRR INTERIMG": replies})
+    a = VistaAdapter(client, mode="live", demo_patients=DEMO)
+    obs = a.get_lab_series("1")
+    assert sorted(o["valueQuantity"]["value"] for o in obs) == [1.1, 1.5]  # the bad-date 9.9 is gone, others kept
+
+
+def test_qa3_unparseable_collection_date_mid_chain_is_flagged_not_fatal() -> None:
+    def replies(params: tuple[str, ...]) -> str:
+        return lab_reply("3150301.1", "1.5") if params[1] == "3300101" else lab_reply("notadate", "2.0")
+
+    client = Script({**BASE, "ORWLRR NEWOLD": "3150301.1^3140101.1", "ORWLRR INTERIMG": replies})
+    a = VistaAdapter(client, mode="live", demo_patients=DEMO)
+    obs = a.get_lab_series("1")  # does not raise
+    assert [o["valueQuantity"]["value"] for o in obs] == [1.5]
+    assert a.truncated_fetches == 1  # cannot page past a page with no usable date: flagged as incomplete
+
+
+def test_qa3_unparseable_fhir_observation_date_skips_that_lab() -> None:
+    from app.context import build_context
+
+    pt = {"resourceType": "Patient", "id": "p", "gender": "male", "birthDate": "1950-01-01"}
+
+    def ob(v: float, when: str) -> dict[str, Any]:
+        return {
+            "resourceType": "Observation",
+            "code": {"coding": [{"system": "http://loinc.org", "code": "2160-0"}]},
+            "effectiveDateTime": when,
+            "valueQuantity": {"value": v, "unit": "mg/dL"},
+        }
+
+    ctx = build_context(pt, [], [], [ob(1.0, "2026-05-01"), ob(2.0, "notadate"), ob(3.0, "2026-13-45")], source="x")
+    assert [v.value for v in ctx.labs["creatinine"]] == [1.0]
+
+
+@pytest.mark.parametrize("value", [0, 0.0, -1, -0.5])
+def test_qa3_reported_egfr_of_zero_or_negative_is_rejected(value: float) -> None:
+    from app.context import build_context
+
+    pt = {"resourceType": "Patient", "id": "p", "gender": "female", "birthDate": "1950-01-01"}
+    egfr = {
+        "resourceType": "Observation",
+        "code": {"coding": [{"system": "http://loinc.org", "code": "62238-1"}]},
+        "effectiveDateTime": "2026-05-01",
+        "valueQuantity": {"value": value, "unit": "mL/min/1.73m2"},
+    }
+    ctx = build_context(pt, [], [], [egfr], source="x")
+    assert "egfr" not in ctx.labs and ctx.latest_lab("egfr") is None  # data gap, not "eGFR 0"
+    assert ctx.dropped_labs == {"egfr: implausible value": 1}
+
+
+def test_qa3_reported_egfr_zero_does_not_fire_a_critical_metformin_alert(service) -> None:  # type: ignore[no-untyped-def]
+    from app.api.app import create_app
+
+    pf_patient = {"resourceType": "Patient", "id": "p1", "gender": "male", "birthDate": "1950-01-01"}
+    egfr = {
+        "resourceType": "Observation",
+        "code": {"coding": [{"system": "http://loinc.org", "code": "62238-1"}]},
+        "effectiveDateTime": "2026-08-20",
+        "valueQuantity": {"value": 0, "unit": "mL/min/1.73m2"},
+    }
+    b = body("p1", "prefetch", "metformin 500 MG Oral Tablet")
+    b["prefetch"] = {
+        "patient": pf_patient,
+        "medications": {"resourceType": "Bundle", "entry": []},
+        "conditions": {"resourceType": "Bundle", "entry": []},
+        "observations": {"resourceType": "Bundle", "entry": [{"resource": egfr}]},
+    }
+    c = client_for(service)
+    cards = c.post(URL, json=b).json()["cards"]
+    assert len(cards) == 1 and cards[0]["indicator"] == "info" and cards[0]["extension"]["org.medsafe.dataGap"] is True
+    assert create_app  # imported for parity with other API tests
+
+
+def test_qa3_vista_umol_creatinine_is_converted_like_fhir() -> None:
+    from app.context import build_context
+
+    def replies(params: tuple[str, ...]) -> str:
+        return lab_reply("3150301.1", "265", "umol/L") if params[1] == "3300101" else ""
+
+    client = Script({**BASE, "ORWLRR NEWOLD": "3150301.1^3150301.1", "ORWLRR INTERIMG": replies})
+    a = VistaAdapter(client, mode="live", demo_patients=DEMO)
+    obs = a.get_lab_series("1")
+    assert len(obs) == 1 and obs[0]["valueQuantity"]["unit"] == "mg/dL"
+    assert obs[0]["valueQuantity"]["value"] == pytest.approx(2.9977, abs=1e-3)
+    # and it is the same number the FHIR path produces for the same reading
+    pt = {"resourceType": "Patient", "id": "p", "gender": "male", "birthDate": "1950-01-01"}
+    fhir_ob = {
+        "resourceType": "Observation",
+        "code": {"coding": [{"system": "http://loinc.org", "code": "2160-0"}]},
+        "effectiveDateTime": "2015-03-01T10:00:00",
+        "valueQuantity": {"value": 265, "unit": "umol/L"},
+    }
+    via_vista = build_context(pt, [], [], obs, source="vista").latest_lab("creatinine")
+    via_fhir = build_context(pt, [], [], [fhir_ob], source="fhir").latest_lab("creatinine")
+    assert via_vista.value == via_fhir.value and via_vista.unit == via_fhir.unit  # type: ignore[union-attr]
+
+
+@pytest.mark.parametrize("unit", ["mg/L", "furlongs", "mmol/L"])
+def test_qa3_vista_unsupported_creatinine_units_are_dropped(unit: str) -> None:
+    def replies(params: tuple[str, ...]) -> str:
+        return lab_reply("3150301.1", "2.0", unit) if params[1] == "3300101" else ""
+
+    client = Script({**BASE, "ORWLRR NEWOLD": "3150301.1^3150301.1", "ORWLRR INTERIMG": replies})
+    assert VistaAdapter(client, mode="live", demo_patients=DEMO).get_lab_series("1") == []
+
+
+def test_qa3_every_env_var_read_by_config_is_documented_in_readme() -> None:
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    config = (root / "backend/app/config.py").read_text()
+    readme = (root / "README.md").read_text()
+    names = set(re.findall(r'"((?:MEDSAFE|VISTA)_[A-Z_]+)"', config))
+    assert len(names) >= 25
+    assert [n for n in sorted(names) if n not in readme] == []
+    for word in ("GEL", "OPHTHALMIC", "FLUSH"):  # the exclusion list in the README matches the mapper
+        assert f"`{word}`" in readme

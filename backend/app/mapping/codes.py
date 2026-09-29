@@ -43,8 +43,10 @@ PLAUSIBLE: dict[str, tuple[float, float]] = {
     "potassium": (1.0, 10.0),  # mmol/L
     "lithium": (0.0, 5.0),  # mmol/L
     "weight": (2.0, 400.0),  # kg
-    "egfr": (0.0, 250.0),  # mL/min/1.73 m2
+    "egfr": (0.0, 250.0),  # mL/min/1.73 m2 (a value of 0 or below is rejected separately: see EXCLUSIVE_LOWER)
 }
+# Labs where the lower bound itself is not a valid measurement (eGFR 0 is a unit/entry error, not a result).
+EXCLUSIVE_LOWER = frozenset({"egfr"})
 # Normalised unit for each lab key, and the source units we can convert (factor to the normalised unit).
 UNIT_CONVERSIONS: dict[str, dict[str, float]] = {
     "creatinine": {

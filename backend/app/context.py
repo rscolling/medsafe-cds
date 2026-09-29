@@ -226,7 +226,7 @@ def _observation_lab(obs: Resource, dropped: dict[str, int] | None = None) -> tu
                     return None
                 value, unit = round(value * factor, 4), codes.NORMAL_UNIT[key]
             lo, hi = codes.PLAUSIBLE.get(key, (float("-inf"), float("inf")))
-            if not lo <= value <= hi:
+            if not lo <= value <= hi or (key in codes.EXCLUSIVE_LOWER and value <= lo):
                 drop(f"{key}: implausible value")
                 return None
             if q.get("comparator") in {"<", ">", "<=", ">="}:

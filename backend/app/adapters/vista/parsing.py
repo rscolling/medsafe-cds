@@ -264,12 +264,20 @@ def lab_sets_to_observations(dfn: str, sets: list[LabSet], skipped: dict[str, in
             except ValueError:
                 skip("non-numeric")
                 continue
+            unit = r["units"]
+            if unit == "" and key in {"creatinine", "potassium"}:
+                skip("missing-units")
+                continue
+            factor = codes.UNIT_CONVERSIONS.get(key, {}).get(unit.strip().lower())
+            if factor is not None:
+                # Same conversion table as the FHIR path (umol/L creatinine -> mg/dL, ...): both sources agree.
+                value, unit = round(value * factor, 4), codes.NORMAL_UNIT[key]
+            elif key in codes.UNIT_CONVERSIONS:
+                skip(f"unsupported-unit:{unit[:12]}")
+                continue
             lo, hi = codes.PLAUSIBLE.get(key, (float("-inf"), float("inf")))
             if not lo <= value <= hi:
                 skip("implausible")
-                continue
-            if r["units"] == "" and key in {"creatinine", "potassium"}:
-                skip("missing-units")
                 continue
             loinc = codes.PRIMARY_LOINC[key]
             obs: Resource = {
@@ -284,7 +292,7 @@ def lab_sets_to_observations(dfn: str, sets: list[LabSet], skipped: dict[str, in
                 "effectiveDateTime": when.isoformat(timespec="seconds"),
                 "valueQuantity": {
                     "value": value,
-                    "unit": r["units"],
+                    "unit": unit,
                     "system": codes.UCUM,
                 },
             }
