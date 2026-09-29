@@ -1,6 +1,6 @@
 """Against a live worldvista/vehu container (RPC Broker :9430). Opt-in: needs VISTA_ACCESS_CODE/VERIFY_CODE.
 
-docker run -d -p 9430:9430 worldvista/vehu   # ~6.7 GB image, 60-75 s to boot
+docker run -d -p 127.0.0.1:9430:9430 worldvista/vehu   # ~6.7 GB image, 60-75 s to boot
 export VISTA_ACCESS_CODE=... VISTA_VERIFY_CODE=...   # public demo codes from the image's Docker Hub page
 """
 
@@ -56,18 +56,63 @@ def test_live_no_data_reply_does_not_raise(live: VistaAdapter) -> None:
     assert isinstance(raw, str)
 
 
+def _comparable(rpc: str, reply: str) -> object:
+    # ORWPT SELECT carries the SSN placeholder (recorded as 000000000) and volatile session pieces: compare the
+    # stable identity pieces only (name, sex, DOB).
+    return reply.split("^")[:3] if rpc == "ORWPT SELECT" else reply
+
+
 def test_live_equals_recorded_for_all_recorded_calls(live: VistaAdapter) -> None:
-    """Drift check: re-issue every recorded call against the live server and compare replies."""
+    """Drift check: re-issue EVERY recorded call (3,275 read-only RPCs) against the live server and compare replies.
+
+    MEDSAFE_DRIFT_SAMPLE=<n> limits it to the first n calls for a quick run (default: all).
+    """
     rec = RecordedRpcClient(REPO_ROOT / "data/vista/recorded/index.json")
+    calls = rec.known_calls()
+    limit = int(os.environ.get("MEDSAFE_DRIFT_SAMPLE", "0")) or len(calls)
     mismatches = []
-    for rpc, params in rec.known_calls()[:300]:
+    for rpc, params in calls[:limit]:
         got = live._client.call(rpc, *params)  # noqa: SLF001
-        want = rec.call(rpc, *params)
-        if rpc == "ORWPT SELECT":  # SSN blanked in recordings
-            got, want = got.split("^")[:3], want.split("^")[:3]  # type: ignore[assignment]
-        if got != want:
+        if _comparable(rpc, got) != _comparable(rpc, rec.call(rpc, *params)):
             mismatches.append((rpc, params))
-    assert not mismatches, mismatches[:3]
+    assert not mismatches, f"{len(mismatches)}/{limit} drifted; first: {mismatches[:3]}"
+
+
+def test_live_urine_creatinine_never_becomes_egfr(live: VistaAdapter) -> None:
+    """H3 on the real server: DFN 100881 as of 2015-07-06 used to report eGFR 0.1 from a urine creatinine."""
+    from datetime import date
+
+    from app.context import build_context
+
+    ctx = build_context(
+        live.get_patient("100881"),
+        live.get_active_meds("100881"),
+        live.get_problems("100881"),
+        live.get_lab_series("100881"),
+        source="vista",
+        as_of=date(2015, 7, 6),
+    )
+    assert all(v.value >= 1 for v in ctx.labs["egfr"]), [v.value for v in ctx.labs["egfr"]]
+    assert ctx.latest_lab("creatinine").value < 20  # type: ignore[union-attr]
+
+
+def test_live_error_replies_are_errors_not_data(live: VistaAdapter) -> None:
+    """H1 on the real server: an M trap and a missing RPC must raise, never parse as an empty record."""
+    from app.adapters.vista.rpc import VistaUnavailableError
+
+    with pytest.raises(VistaUnavailableError):
+        live._client.call("ORWPT SELECT", "1;2")  # noqa: SLF001  # M  ERROR=...
+    with pytest.raises(VistaUnavailableError, match="doesn't exist"):
+        live._client.call("NO SUCH RPC X")  # noqa: SLF001
+    assert live._client.call("ORWPT SELECT", "100881")  # noqa: SLF001  # the connection survives both
+
+
+def test_live_leading_zero_junk_dfn_is_excluded(live: VistaAdapter) -> None:
+    from app.adapters.base import SourceUnavailableError
+
+    live._excluded = {"100897"}  # noqa: SLF001
+    with pytest.raises(SourceUnavailableError, match="excluded"):
+        live.get_patient("0100897")
 
 
 def test_live_same_rule_fires_for_vehu_and_twin(live: VistaAdapter) -> None:

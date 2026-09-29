@@ -12,7 +12,7 @@
 | RPC | params | notes |
 |---|---|---|
 | `ORWPT LIST ALL` | from, direction | `DFN^NAME`, paged; ~860 patients in VEHU |
-| `ORWPT SELECT` | DFN | `NAME^SEX^DOB(FileMan)^...`; SSN piece is fake and is blanked in recorded fixtures |
+| `ORWPT SELECT` | DFN | `NAME^SEX^DOB(FileMan)^...`; the SSN piece is replaced by the placeholder `000000000` in recorded fixtures |
 | `ORWPS ACTIVE` | DFN, "0", "1", "0" | header `~TYPE^ORDERID^NAME^...^STATUS`, then name and `\ Sig:` lines. Types OP, NV, UD, IV, CP |
 | `ORQQPL LIST` | DFN, "A" | `IEN^Problem text (SCT code)^A^ICD^onset...`; `^No problems found.` when empty |
 | `ORWLRR NEWOLD` | DFN | `newestFM^oldestFM`, empty = no labs |
@@ -21,6 +21,19 @@
 
 ### Quirks that shaped the design
 
+- **VistA errors arrive as data (fixed in the fork).** `ORWPT SELECT "1;2"` returns `\x18M  ERROR=SELECT+14^ORWPT...`
+  and a missing RPC returns `=Remote Procedure '...' doesn't exist on the server.`: a one-byte length prefix (a control
+  character or `=`/`>`) in front of the message. The fork strips that byte before the error match so both raise `RPCError`
+  and cannot look like an empty medication or lab list. Tests replay the real bytes; live tests re-check them on VEHU.
+- **Lab specimen.** `ORWLRR INTERIMG` returns urine and serum creatinine under the same test name. VEHU has urine
+  creatinine results (for example DFN 100881, 2015-07-06) that used to give an eGFR of 0.1. Only serum/plasma results with
+  the creatinine test IEN (173) are used, values outside 0.1-25 mg/dL are dropped, and unknown or missing units are
+  dropped rather than assumed. Verified live: DFN 100881 as of 2015-07-06 now has creatinine 2.6 mg/dL, eGFR 18.4.
+- **Paging.** Real patients have up to ~150 lab collections (DFN 100000: 147), one INTERIMG call each. The cap is 200;
+  paging compares FileMan values numerically and stops with a `labs-truncated` tag if a page fails to advance or the cap
+  is reached. `ORWLRR NEWOLD` disagrees with the INTERIMG chain head for a few patients (2 of 110 recorded, e.g. DFN 737);
+  the chain is authoritative, the disagreement is logged and counted, and a NEWOLD reply that is neither `^` nor a FileMan
+  pair is an error, not "no labs".
 - **`parse_response` bug (fixed in the fork).** Upstream treats any reply whose first byte is below 0x20 as
   an error length prefix, so a legitimate data reply such as `"\r\nNo Data Found"` raised a truncated
   `RPCError`. The fork records whether the `\x00\x00` success prefix was present and, when it was, always
@@ -41,14 +54,14 @@
 - **Junk patient DFN 100897** holds 1,430 orders (a drug-list test record) and is excluded.
 - **Free-text drug names.** `ORWPS ACTIVE` names are free text (`METFORMIN HCL 500MG TAB`); the mapper
   matches ingredient names and known salts. Unmapped names are counted, not guessed.
-- **Not thread-safe.** One broker connection = one socket = one conversation. One lock per client, reconnect
-  once, timeouts on every socket operation.
+- **Not thread-safe.** One broker connection = one socket = one conversation. One lock per client, timeouts on every
+  socket operation, circuit breaker (see architecture). `ORWPT SELECT` drift comparison uses only name/sex/DOB.
 
 ### Recorded fixtures
 
-`backend/tests/fixtures/vehu_real_replies.json` and `data/vista/recorded/` hold **3,275 real replies for 110
-VEHU patients** captured with `scripts/capture_vista_fixtures.py` so CI does not need the 6.7 GB container.
-`test_vista_live.py` (opt-in) diffs live output against them to detect drift.
+`backend/tests/fixtures/vehu_real_replies.json` and `data/vista/recorded/` hold **12,837 real replies for 110
+VEHU patients** (re-captured after the lab paging cap was raised; the original 3,275 are a subset with identical bytes) captured with `scripts/capture_vista_fixtures.py` so CI does not need the 6.7 GB container.
+`test_vista_live.py` (opt-in) diffs live output against **all** of them (about 45 s; `MEDSAFE_DRIFT_SAMPLE=n` for a quick subset).
 
 ### FHIR-on-VistA
 

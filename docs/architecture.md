@@ -26,8 +26,12 @@ flowchart LR
    VistA adapter parses RPC text (`ORWPS ACTIVE`, `ORQQPL LIST`, `ORWLRR INTERIMG`, `ORQQVI VITALS`) into the
    same shapes, so the rest of the system cannot tell which source it is talking to.
 3. `build_context` maps drugs to RxNorm ingredients (free-text names handled by the mapper), picks
-   `as_of` (default: newest observation in the patient record, so relative windows work for old VEHU dates),
-   and derives eGFR (reported wins, else CKD-EPI 2021 computed, labelled `source="computed"`).
+   `as_of` (`MEDSAFE_AS_OF_POLICY`: wall clock for prefetch data, newest observation for the historical fixtures /
+   VEHU), and derives eGFR (CKD-EPI 2021 computed for every creatinine without a same-day reported eGFR, labelled
+   `source="computed"`; a reported value on the same day wins). Labs are unit-normalised (creatinine to mg/dL) or dropped,
+   range-checked, and only serum/plasma creatinine counts (urine is excluded by specimen and test IEN). A combination
+   drug is expanded to one drug per ingredient; a draft that cannot be identified, is non-systemic (topical, ophthalmic,
+   flush...), or is only partly recognised gets an explicit info card instead of a silent pass.
 4. The engine evaluates each rule. **Baseline**: fire on drug-class match. **Context**: run the rule's named
    check or suppression predicates; emit an actionable card, a suppression record, or a data-gap info card.
 5. Cards carry summary, detail, "why" bullets, public source link, suggestions, override reasons, and the
@@ -35,8 +39,13 @@ flowchart LR
 
 ## Failure behaviour
 
-- The VistA broker is stateful and not thread-safe: `BrokerRpcClient` holds one lock, socket timeouts
-  (default 8 s), and one reconnect attempt. Endpoints are plain `def` (run in Starlette's threadpool).
+- The VistA broker is stateful and not thread-safe: `BrokerRpcClient` holds one lock (callers wait at most one
+  timeout for it), socket timeouts (default 8 s), and a circuit breaker. Sign-on/handshake/context rejections are never
+  retried (account-lockout risk) and suspend sign-on for a cool-down; transport failures open the circuit so calls
+  fail fast; only a stale *established* connection gets one transparent reconnect. One patient fetch has a total
+  deadline and concurrent requests for the same DFN share one fetch (single-flight). `/ready` and `/api/sources` read
+  the breaker state and a 10 s cached probe instead of issuing an RPC under the lock. Endpoints are plain `def`
+  (run in Starlette's threadpool).
 - **Fail open**: if the source is slow or down the response is `{"cards": []}` with an `X-Medsafe-Degraded`
   header, a logged warning, and an audit `source_error` row. Alert-fatigue tooling must never block ordering.
 - Per-patient TTL cache (60 s) avoids repeating RPCs across the hook calls of one ordering session.

@@ -21,3 +21,6 @@
    a one-byte SNDERR length prefix (control character such as `\x18`, or `=` / `>`), so these errors are raised as
    `RPCError` instead of being returned as data (which had made VistA errors look like empty meds/labs). Verified
    against live VEHU replies; the `"\r\nNo Data Found"` data fix is unchanged.
+6. `rpc/broker.py`: removed the unused `_redact` helper and its `_REDACT_RE` (upstream defined them but never
+   called them, so they gave a false impression that broker log lines were redacted). The application does its own
+   redaction (`app/logging_setup.py`); the vendored library logs only sizes, states and the DUZ, never the codes.

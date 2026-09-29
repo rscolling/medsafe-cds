@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 import os
-import re
 
 from vista_clients.rpc.errors import (
     AuthenticationError,
@@ -35,21 +34,9 @@ from vista_clients.rpc.transport import Transport
 
 logger = logging.getLogger(__name__)
 
-# Pattern to redact access/verify codes in log messages
-_REDACT_RE = re.compile(
-    r"(access[_ ]?code|verify[_ ]?code|AV[_ ]?CODE|credentials?)"
-    r"[=: ]+\S+",
-    re.IGNORECASE,
-)
-
 # medsafe-cds patch: upstream shipped built-in demo credentials as a fallback. They were removed here so that no
 # credential (even the public VEHU demo pair) is hard-coded: pass them explicitly or set VISTA_ACCESS_CODE /
 # VISTA_VERIFY_CODE.
-
-
-def _redact(msg: str) -> str:
-    """Replace credential values with ***REDACTED*** in log messages."""
-    return _REDACT_RE.sub(r"\1=***REDACTED***", msg)
 
 
 class VistABroker:
@@ -185,9 +172,7 @@ class VistABroker:
             StateError: If not handshaked.
         """
         if self._state != SessionState.HANDSHAKED:
-            raise StateError(
-                f"Cannot authenticate in state {self._state.value}; must be HANDSHAKED"
-            )
+            raise StateError(f"Cannot authenticate in state {self._state.value}; must be HANDSHAKED")
 
         ac, vc, source = self._resolve_credentials(access_code, verify_code)
         logger.debug("Credential source: %s", source.value)
@@ -206,9 +191,7 @@ class VistABroker:
             "XUS AV CODE",
             [
                 RPCParameter(
-                    param_type=__import__(
-                        "vista_clients.rpc.protocol", fromlist=["ParamType"]
-                    ).ParamType.LITERAL,
+                    param_type=__import__("vista_clients.rpc.protocol", fromlist=["ParamType"]).ParamType.LITERAL,
                     value=av_encrypted,
                 )
             ],
@@ -247,10 +230,7 @@ class VistABroker:
             SessionState.AUTHENTICATED,
             SessionState.CONTEXT_SET,
         ):
-            raise StateError(
-                f"Cannot set context in state {self._state.value}; "
-                "must be AUTHENTICATED or CONTEXT_SET"
-            )
+            raise StateError(f"Cannot set context in state {self._state.value}; must be AUTHENTICATED or CONTEXT_SET")
 
         assert self._transport is not None
 
@@ -306,14 +286,10 @@ class VistABroker:
             raw = self._transport.receive()
             logger.debug("RPC << %d bytes", len(raw))
         except Exception as exc:
-            raise BrokerConnectionError(
-                f"Connection broken during RPC '{rpc_name}': {exc}"
-            ) from exc
+            raise BrokerConnectionError(f"Connection broken during RPC '{rpc_name}': {exc}") from exc
 
         logger.debug("RPC response length: %d", len(raw))
-        return parse_response(
-            raw, had_null_prefix=self._transport.last_reply_had_null_prefix
-        )
+        return parse_response(raw, had_null_prefix=self._transport.last_reply_had_null_prefix)
 
     def ping(self) -> None:
         """Send XWB IM HERE keepalive to reset server timeout.

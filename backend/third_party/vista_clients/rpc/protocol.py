@@ -331,9 +331,7 @@ def build_connect_message(hostname: str, app_name: str) -> bytes:
     """
     command_token = "4"
     name_spec = spack("TCPConnect")
-    param_spec = (
-        "5" + "0" + lpack(hostname) + "f" + "0" + lpack("0") + "f" + "0" + lpack(app_name) + "f"
-    )
+    param_spec = "5" + "0" + lpack(hostname) + "f" + "0" + lpack("0") + "f" + "0" + lpack(app_name) + "f"
     msg = _PREFIX + command_token + name_spec + param_spec + chr(4)
     return msg.encode("utf-8")
 

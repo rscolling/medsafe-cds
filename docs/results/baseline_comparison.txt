@@ -34,13 +34,13 @@ suppressed by context:             28 (58.3% of baseline)
 evaluations (patient x candidate order): 880
 baseline alerts:                   341
 context-aware actionable alerts:   10
-context-aware data-gap (info):     36
-suppressed by context:             295 (86.5% of baseline)
+context-aware data-gap (info):     35
+suppressed by context:             296 (86.8% of baseline)
 
   rule                                baseline   fire   gap
   apixaban-dose-reduction                  110      0     0
   lithium-interacting-drugs                  7      7     0
-  metformin-low-egfr                       110      1    36
+  metformin-low-egfr                       110      1    35
   raas-potassium-hyperkalemia                4      2     0
   rivaroxaban-renal-dose                   110      0     0
 

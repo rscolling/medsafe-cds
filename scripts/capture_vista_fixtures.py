@@ -3,7 +3,7 @@
 
 Requires: `docker run -d -p 9430:9430 worldvista/vehu` (public image, synthetic data) and
 VISTA_ACCESS_CODE / VISTA_VERIFY_CODE set (public demo codes from the image's Docker Hub page).
-Only the RPC replies the adapter needs are stored. The (fake) SSN piece of ORWPT SELECT is blanked.
+Only the RPC replies the adapter needs are stored. The (fake) SSN piece of ORWPT SELECT is replaced by the placeholder 000000000.
 """
 
 from __future__ import annotations

@@ -52,13 +52,9 @@ class Transport:
             sock.connect((self._host, self._port))
             self._sock = sock
         except TimeoutError as exc:
-            raise BrokerConnectionError(
-                f"Connection timed out to {self._host}:{self._port}"
-            ) from exc
+            raise BrokerConnectionError(f"Connection timed out to {self._host}:{self._port}") from exc
         except OSError as exc:
-            raise BrokerConnectionError(
-                f"Connection refused to {self._host}:{self._port}: {exc}"
-            ) from exc
+            raise BrokerConnectionError(f"Connection refused to {self._host}:{self._port}: {exc}") from exc
 
     def send(self, data: bytes) -> None:
         """Send data over the TCP connection.
