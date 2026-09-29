@@ -6,7 +6,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+# MEDSAFE_ROOT lets a non-editable install (e.g. the Docker image) point at the rules/ and data/ directories.
+REPO_ROOT = Path(os.environ.get("MEDSAFE_ROOT") or Path(__file__).resolve().parents[2])
 
 
 def _env(name: str, default: str = "") -> str:

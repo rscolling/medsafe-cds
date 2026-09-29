@@ -56,14 +56,29 @@ def main() -> int:
     }
     print(format_report(sections, labeled, LIMIT_NOTES))
     if args.json:
-        args.json.write_text(json.dumps({
-            "label": "illustrative on synthetic data",
-            "sections": {t: {"evaluations": s.evaluations, "baseline": s.baseline_alerts, "context_fire": s.context_fire,
-                             "context_data_gap": s.context_data_gap, "suppressed": s.suppressed,
-                             "reduction_pct": s.reduction_pct, "per_rule": {k: dict(v) for k, v in s.per_rule.items()}}
-                         for t, s in sections},
-            "labeled": {k: {"baseline": v["baseline"], "context": v["context"]} for k, v in labeled.items()},
-            "limits": LIMIT_NOTES}, indent=2) + "\n")
+        args.json.write_text(
+            json.dumps(
+                {
+                    "label": "illustrative on synthetic data",
+                    "sections": {
+                        t: {
+                            "evaluations": s.evaluations,
+                            "baseline": s.baseline_alerts,
+                            "context_fire": s.context_fire,
+                            "context_data_gap": s.context_data_gap,
+                            "suppressed": s.suppressed,
+                            "reduction_pct": s.reduction_pct,
+                            "per_rule": {k: dict(v) for k, v in s.per_rule.items()},
+                        }
+                        for t, s in sections
+                    },
+                    "labeled": {k: {"baseline": v["baseline"], "context": v["context"]} for k, v in labeled.items()},
+                    "limits": LIMIT_NOTES,
+                },
+                indent=2,
+            )
+            + "\n"
+        )
     return 0
 
 

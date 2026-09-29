@@ -27,15 +27,21 @@ def main() -> None:
     demo = json.loads((ROOT / "data" / "vista" / "demo_patients.json").read_text())
     client = RecordingRpcClient(
         BrokerRpcClient(
-            os.environ.get("VISTA_HOST", "localhost"), int(os.environ.get("VISTA_PORT", "9430")),
-            os.environ["VISTA_ACCESS_CODE"], os.environ["VISTA_VERIFY_CODE"], "OR CPRS GUI CHART", 30.0,
+            os.environ.get("VISTA_HOST", "localhost"),
+            int(os.environ.get("VISTA_PORT", "9430")),
+            os.environ["VISTA_ACCESS_CODE"],
+            os.environ["VISTA_VERIFY_CODE"],
+            "OR CPRS GUI CHART",
+            30.0,
         )
     )
     adapter = VistaAdapter(client, mode="live", demo_patients=demo, cache_ttl_s=0)
     ok = 0
     for p in demo:
         try:
-            adapter.get_patient(p["dfn"]); adapter.get_active_meds(p["dfn"]); adapter.get_lab_series(p["dfn"])
+            adapter.get_patient(p["dfn"])
+            adapter.get_active_meds(p["dfn"])
+            adapter.get_lab_series(p["dfn"])
             ok += 1
         except Exception as exc:  # noqa: BLE001
             print("skip", p["dfn"], exc)
