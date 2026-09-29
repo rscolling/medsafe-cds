@@ -102,3 +102,14 @@ Fresh `git clone` into /tmp, `scripts/setup.sh`, on 2026-09-29 (Python 3.12.14, 
 - Not verified: GitHub Actions workflow (not executed), full `docker compose up` stack (the sandbox bridge network
   dropped container-to-container traffic, so the loader could not reach HAPI; images build and the backend image
   serves /health and /cds-services when run with host networking).
+
+### After the code review (`REVIEW.md`, HEAD 2d93dca), fresh clone, 2026-09-29
+
+- `make test`: 394 passed, 24 integration tests deselected, coverage 97.06% (gate 85%).
+- `make lint` clean (ruff, format check, `mypy app` strict, eslint, tsc). `npm run build` OK.
+- Playwright e2e: 7 passed (system Chrome). `make security`: pip-audit no known vulnerabilities, bandit clean, npm audit 0.
+- `make compare`: identical to `docs/results/baseline_comparison.txt` (cohort 63.1% suppression; hand-authored precision
+  0.571 to 1.0; recorded VEHU 86.8%, data-gap 35). VEHU moved from 86.5% because urine creatinine no longer yields eGFR 0.1.
+- Live VEHU integration (`MEDSAFE_VISTA_MODE=live`): 11 passed including the full 12,837-call drift diff; 13 HAPI tests
+  skipped (HAPI not up).
+- Still not verified: `docker compose up` end to end, rebuilt Docker images, and the GitHub Actions workflow.

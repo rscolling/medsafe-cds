@@ -41,12 +41,18 @@ This is a **localhost prototype**. Do not put it on a network, and never load re
 - With no configuration the service logs a loud `INSECURE DEV DEFAULT` warning at startup: `/api/audit`,
   `/api/audit/summary`, `/metrics` and `/docs` are open, and patient ids in logs/audit are pseudonymised with a
   public default salt (trivially reversible).
-- Set `MEDSAFE_AUDIT_API_KEY` to protect `/api/audit*` and `/metrics` (send it as `X-API-Key`) and to switch off
-  `/docs` and `/openapi.json`. `/health` and `/ready` stay open for probes. Set `MEDSAFE_PSEUDONYM_SALT` (16+
+- Set `MEDSAFE_AUDIT_API_KEY` to protect `/api/audit*`, `/metrics` and the UI helper endpoints `/api/sources`,
+  `/api/patients`, `/api/compare` (send it as `X-API-Key`) and to switch off `/docs` and `/openapi.json`. The bundled
+  demo UI does not send a key, so it only works keyless on localhost; with a key set, use the CDS Hooks endpoints or
+  call the API with the header. `/health` and `/ready` stay open for probes (`/ready` also reports a down data source under `degraded`). Set `MEDSAFE_PSEUDONYM_SALT` (16+
   random characters).
 - Set `MEDSAFE_ENV=production` and the app **refuses to start** unless both of the above are set. This enforces
   the two settings; it does not make the prototype production-ready (no TLS, no user authentication on the hook
   endpoints, in-process rate limiting).
+- Rate limiting is per client IP, in process. Behind a reverse proxy (including the bundled nginx) every request
+  arrives from the proxy's address and **shares one bucket**; set `MEDSAFE_CLIENT_IP_HEADER=X-Forwarded-For` (only if
+  your proxy overwrites/appends it; the last entry is used) to get per-client buckets. Use the gateway's limiter for
+  anything multi-replica.
 - Request bodies are capped at 1 MB (`MEDSAFE_MAX_BODY_BYTES`, 413) and at 50 draft orders per request
   (`MEDSAFE_MAX_DRAFT_ORDERS`, 422). Malformed or hostile payloads fail open (`{"cards": []}` with an
   `X-Medsafe-Degraded` header) or return a 422 that does not echo the request body.
@@ -95,13 +101,13 @@ Run on the author's dev box (Debian, Python 3.12.14 via uv, Node 20.19.2) on 202
 
 | check | result |
 |---|---|
-| backend unit + contract tests (`make test`) | 239 passed, 18 integration tests deselected; coverage 97.02% (gate 85%) (after the QA hardening pass) |
+| backend unit + contract tests (`make test`) | 394 passed, 24 integration tests deselected; coverage 97.06% (gate 85%). Fresh clone at the review-fix commits |
 | `ruff check` / `ruff format --check` / `mypy app` (strict) | clean |
-| integration tests with HAPI v7.4.0 and live VEHU up | 18 passed (skip cleanly otherwise) |
+| integration tests | **11 passed** against live VEHU (incl. a diff of all 12,837 recorded RPC replies), **13 HAPI tests skipped** because HAPI was not running in this pass (the earlier run with HAPI v7.4.0 up passed 13/13, before the review fixes; not repeated) |
 | live VEHU verification | RPCs ORWPT SELECT, ORWPS ACTIVE, ORQQPL LIST, ORWLRR NEWOLD/INTERIMG, ORQQVI VITALS work through the patched client; live output matches the recorded fixtures |
 | frontend eslint, tsc, build | clean |
 | Playwright e2e (system Chrome) | 7 passed |
-| Docker images | backend + frontend images build; backend image serves `/health` and CDS Hooks discovery (this check predates the hardening pass below and was not repeated) |
+| Docker images | **Not re-run after the review fixes.** The backend and frontend images built and the backend image served `/health` and CDS Hooks discovery once, before the QA hardening and review-fix commits; nothing since has been built or run |
 | `docker-compose.yml` | parsed and images built with compose v2.29.7; **the full stack was not verified end to end here**: on this sandbox the bridge network could not route container-to-container traffic (the loader could not reach HAPI), so compose is unverified as a running system |
 | GitHub Actions workflow | **not run** (no runner); its commands were run locally |
 
@@ -111,7 +117,7 @@ Precise coverage, test counts, and security-scan results are in the final sectio
 ## The comparison, and its limits
 
 `make compare` prints alert counts for baseline vs context-aware mode ([docs/results/baseline_comparison.txt](docs/results/baseline_comparison.txt)).
-On the seeded 300-patient cohort context mode suppresses 63% of baseline alerts, and on the ten labeled
+On the seeded 300-patient cohort context mode suppresses 63.1% of baseline alerts (86.8% on the recorded VEHU cohort, where most orders simply find no matching class), and on the ten labeled
 scenarios precision goes 0.571 to 1.0 at recall 1.0. **Read those as a demonstration of the mechanism, not a
 result**: the cohort's prevalence and lab distributions were chosen by the author, the labels are the
 author's judgement on n=10, there is no clinician review and no outcome data. Data-gap info cards are counted
@@ -121,12 +127,26 @@ separately from actionable alerts.
 
 ```bash
 # the image is ~6.7 GB; the broker needs ~60-75 s after start
-docker run -d -p 9430:9430 --name vehu worldvista/vehu
+docker run -d -p 127.0.0.1:9430:9430 --name vehu worldvista/vehu   # loopback only: the broker is plaintext
 cp .env.example .env            # public demo codes from the Docker Hub page; then:
 set -a; . ./.env; set +a
 MEDSAFE_VISTA_MODE=live make test-integration      # opt-in tests, skip when the broker is down
 make capture-vista                                 # re-record replies into data/vista/recorded
 ```
+
+Live-mode safety: a rejected sign-on (bad codes, handshake or context error) is **never retried** and suspends all
+sign-on attempts for `MEDSAFE_VISTA_AUTH_COOLDOWN_S` (300 s) so a misconfiguration cannot lock the VistA account; a
+transport failure opens a circuit for `MEDSAFE_VISTA_BREAKER_COOLDOWN_S` (15 s) so calls fail fast (and fail open) instead
+of each waiting for a socket timeout; one patient fetch has a total budget (`MEDSAFE_VISTA_FETCH_DEADLINE_S`, 10 s).
+Lab history is paged up to 200 collections; if that cap (or a bad page) is hit the Patient is tagged `labs-truncated`,
+logged, and counted in `/api/sources`.
+
+`MEDSAFE_AS_OF_POLICY` (`auto` default | `today` | `anchored`) sets what "now" means for windows such as "eGFR within
+90 days": `today` is the wall clock (a 2021 creatinine is then stale and yields a data-gap card, not a critical
+alert), `anchored` is the newest observation in the record. `auto` uses `today` for caller-supplied prefetch data and
+`anchored` for the bundled fixtures and VEHU (their dates are historical). The policy and date are printed on every
+card and returned by `/api/compare`. `MEDSAFE_VISTA_PENDING_ACTIVE` (default true) controls whether VistA `PENDING`
+(unreleased) outpatient orders count as current medications.
 
 `MEDSAFE_VISTA_MODE`: `live` (broker only), `recorded` (real replies captured from VEHU, used in CI), or
 `auto` (live if reachable and credentials set, else recorded). VEHU has no eGFR results and only two
