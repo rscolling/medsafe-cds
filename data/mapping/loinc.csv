@@ -1,0 +1,8 @@
+key,loinc,display,unit
+creatinine,2160-0,Creatinine [Mass/volume] in Serum or Plasma,mg/dL
+potassium,2823-3,Potassium [Moles/volume] in Serum or Plasma,mmol/L
+lithium,14334-7,Lithium [Moles/volume] in Serum or Plasma,mmol/L
+egfr_ckdepi2021,98979-8,Glomerular filtration rate [Volume Rate/Area] in Serum Plasma or Blood by Creatinine-based formula (CKD-EPI 2021)/1.73 sq M,mL/min/1.73m2
+egfr_ckdepi2009,62238-1,Glomerular filtration rate [Volume Rate/Area] in Serum Plasma or Blood by Creatinine-based formula (CKD-EPI)/1.73 sq M,mL/min/1.73m2
+egfr_mdrd,33914-3,Glomerular filtration rate [Volume Rate/Area] in Serum or Plasma by Creatinine-based formula (MDRD)/1.73 sq M,mL/min/1.73m2
+body_weight,29463-7,Body weight,kg

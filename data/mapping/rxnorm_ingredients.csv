@@ -1,0 +1,80 @@
+rxcui,ingredient,classes,synonyms
+6809,metformin,metformin;biguanide,METFORMIN|METFORMIN HCL|METFORMIN HYDROCHLORIDE|GLUCOPHAGE
+4815,glyburide,sulfonylurea;glyburide,GLYBURIDE|GLIBENCLAMIDE|MICRONASE|DIABETA
+4821,glipizide,sulfonylurea,GLIPIZIDE|GLUCOTROL
+25789,glimepiride,sulfonylurea,GLIMEPIRIDE|AMARYL
+10635,tolbutamide,sulfonylurea,TOLBUTAMIDE
+2404,chlorpropamide,sulfonylurea,CHLORPROPAMIDE
+29046,lisinopril,acei;raas,LISINOPRIL|PRINIVIL|ZESTRIL
+3827,enalapril,acei;raas,ENALAPRIL|VASOTEC
+35296,ramipril,acei;raas,RAMIPRIL|ALTACE
+1998,captopril,acei;raas,CAPTOPRIL|CAPOTEN
+18867,benazepril,acei;raas,BENAZEPRIL|LOTENSIN
+35208,quinapril,acei;raas,QUINAPRIL|ACCUPRIL
+50166,fosinopril,acei;raas,FOSINOPRIL
+54552,perindopril,acei;raas,PERINDOPRIL
+38454,trandolapril,acei;raas,TRANDOLAPRIL
+52175,losartan,arb;raas,LOSARTAN|COZAAR
+69749,valsartan,arb;raas,VALSARTAN|DIOVAN
+214354,candesartan,arb;raas,CANDESARTAN|CANDESARTAN CILEXETIL|ATACAND
+83818,irbesartan,arb;raas,IRBESARTAN|AVAPRO
+321064,olmesartan,arb;raas,OLMESARTAN|BENICAR
+73494,telmisartan,arb;raas,TELMISARTAN|MICARDIS
+1091643,azilsartan,arb;raas,AZILSARTAN|EDARBI
+4603,furosemide,loop_diuretic;diuretic,FUROSEMIDE|LASIX
+38413,torsemide,loop_diuretic;diuretic,TORSEMIDE|DEMADEX
+1808,bumetanide,loop_diuretic;diuretic,BUMETANIDE|BUMEX
+5487,hydrochlorothiazide,thiazide;diuretic,HYDROCHLOROTHIAZIDE|HCTZ|MICROZIDE
+2409,chlorthalidone,thiazide;diuretic,CHLORTHALIDONE|THALITONE
+5764,indapamide,thiazide;diuretic,INDAPAMIDE
+6916,metolazone,thiazide;diuretic,METOLAZONE|ZAROXOLYN
+9997,spironolactone,k_sparing_diuretic;diuretic;k_raising,SPIRONOLACTONE|ALDACTONE
+10763,triamterene,k_sparing_diuretic;diuretic;k_raising,TRIAMTERENE|DYRENIUM
+644,amiloride,k_sparing_diuretic;diuretic;k_raising,AMILORIDE|MIDAMOR
+298869,eplerenone,k_sparing_diuretic;diuretic;k_raising,EPLERENONE|INSPRA
+8591,potassium chloride,k_supplement;k_raising,POTASSIUM CHLORIDE|KCL|K-DUR|KLOR-CON
+5640,ibuprofen,nsaid,IBUPROFEN|MOTRIN|ADVIL
+7258,naproxen,nsaid,NAPROXEN|NAPROXEN SODIUM|ALEVE|NAPROSYN
+3355,diclofenac,nsaid,DICLOFENAC|VOLTAREN
+5781,indomethacin,nsaid,INDOMETHACIN|INDOCIN
+35827,ketorolac,nsaid,KETOROLAC|TORADOL
+41493,meloxicam,nsaid,MELOXICAM|MOBIC
+140587,celecoxib,nsaid,CELECOXIB|CELEBREX
+6142,ketoprofen,nsaid,KETOPROFEN
+24605,etodolac,nsaid,ETODOLAC
+31448,nabumetone,nsaid,NABUMETONE
+8356,piroxicam,nsaid,PIROXICAM
+10237,sulindac,nsaid,SULINDAC
+32613,oxaprozin,nsaid,OXAPROZIN
+3393,diflunisal,nsaid,DIFLUNISAL
+1364430,apixaban,doac,APIXABAN|ELIQUIS
+1114195,rivaroxaban,doac,RIVAROXABAN|XARELTO
+1546356,dabigatran,doac,DABIGATRAN|PRADAXA
+1599538,edoxaban,doac,EDOXABAN|SAVAYSA
+11289,warfarin,vka;anticoagulant,WARFARIN|COUMADIN|JANTOVEN
+67108,enoxaparin,lmwh;anticoagulant,ENOXAPARIN|LOVENOX
+5224,heparin,heparin;anticoagulant,HEPARIN
+6448,lithium,lithium,LITHIUM|LITHIUM CARBONATE|LITHIUM CITRATE|LITHOBID
+3407,digoxin,digoxin,DIGOXIN|LANOXIN
+1191,aspirin,antiplatelet,ASPIRIN|ASA
+32968,clopidogrel,antiplatelet,CLOPIDOGREL|PLAVIX
+161,acetaminophen,analgesic,ACETAMINOPHEN|APAP|TYLENOL
+167,acetazolamide,carbonic_anhydrase_inhibitor,ACETAZOLAMIDE|DIAMOX
+689,aminophylline,xanthine,AMINOPHYLLINE
+435,albuterol,beta_agonist,ALBUTEROL|ALBUTEROL SULFATE|ALBUTEROL SO4|PROVENTIL
+28889,loratadine,antihistamine,LORATADINE|CLARITIN
+20610,cetirizine,antihistamine,CETIRIZINE|ZYRTEC
+18631,azithromycin,antibiotic,AZITHROMYCIN|ZITHROMAX
+723,amoxicillin,antibiotic,AMOXICILLIN|AMOXIL
+7984,penicillin V,antibiotic,PENICILLIN VK|PENICILLIN V
+2541,cimetidine,h2_blocker,CIMETIDINE|TAGAMET
+6468,loperamide,antidiarrheal,LOPERAMIDE|LOPERAMIDE HCL|IMODIUM
+6754,meperidine,opioid,MEPERIDINE|DEMEROL
+8134,phenobarbital,barbiturate,PHENOBARBITAL
+6918,metoprolol,beta_blocker,METOPROLOL|METOPROLOL TARTRATE|LOPRESSOR
+4492,fluorouracil,antineoplastic,FLUOROURACIL|5-FU
+8308,phytonadione,vitamin_k,PHYTONADIONE|VITAMIN K1
+10814,liothyronine,thyroid,LIOTHYRONINE|SOD LIOTHYRONINE|CYTOMEL
+7407,nicotine,nicotine_replacement,NICOTINE
+1151,ascorbic acid,supplement,ASCORBIC ACID|VITAMIN C
+8704,prochlorperazine,antiemetic,PROCHLORPERAZINE|COMPAZINE

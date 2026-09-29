@@ -1,0 +1,7 @@
+prefix,key,display
+250,diabetes,Diabetes mellitus (ICD-9-CM 250.x)
+585,ckd,Chronic kidney disease (ICD-9-CM 585.x)
+403,ckd,Hypertensive chronic kidney disease (ICD-9-CM 403.x)
+428,heart_failure,Heart failure (ICD-9-CM 428.x)
+401,hypertension,Essential hypertension (ICD-9-CM 401.x)
+427.31,afib,Atrial fibrillation (ICD-9-CM 427.31)

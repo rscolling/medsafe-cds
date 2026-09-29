@@ -1,0 +1,4 @@
+vista_test_name,vista_test_ien,loinc,note
+CREATININE,173,2160-0,VEHU lab test file IEN 173
+POTASSIUM,177,2823-3,VEHU lab test file IEN 177
+LITHIUM,,14334-7,name-based only (no VEHU results observed)

@@ -1,0 +1,15 @@
+snomed,key,display
+709044004,ckd,Chronic kidney disease
+236425005,ckd,Chronic renal impairment
+431857002,ckd,Chronic kidney disease stage 4
+433144002,ckd,Chronic kidney disease stage 3
+700378005,ckd,Chronic kidney disease stage 3A
+700379002,ckd,Chronic kidney disease stage 3B
+433146000,ckd,Chronic kidney disease stage 5
+46177005,ckd,End-stage renal disease
+73211009,diabetes,Diabetes mellitus
+44054006,diabetes,Type 2 diabetes mellitus
+38341003,hypertension,Hypertensive disorder
+84114007,heart_failure,Heart failure
+418304008,heart_failure,Diastolic heart failure
+49436004,afib,Atrial fibrillation
