@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import threading
 from pathlib import Path
 from typing import Any
 
@@ -177,8 +176,107 @@ def test_m_error_from_broker_becomes_vista_unavailable_not_empty_data() -> None:
             parse_response(REAL_M_ERROR, had_null_prefix=True)
             raise AssertionError("unreachable")
 
-    client = BrokerRpcClient.__new__(BrokerRpcClient)
-    client._lock = threading.Lock()
+    client = BrokerRpcClient("h", 1, "a", "v", "ctx", 1.0)
     client._broker = Broker()
     with pytest.raises(VistaUnavailableError, match="M  ERROR"):
         client.call("ORWPT SELECT", "1;2")
+
+
+# ---- M4/M5: never hammer sign-on; fast-fail while VistA is down ------------------------------------------------
+
+
+class _Clock:
+    def __init__(self) -> None:
+        self.t = 1000.0
+
+    def __call__(self) -> float:
+        return self.t
+
+
+def _signon_broker(monkeypatch: pytest.MonkeyPatch, exc: Exception | None, stage: str = "authenticate") -> list[int]:
+    import vista_clients.rpc as rpc
+
+    attempts: list[int] = []
+
+    class B(FakeBroker):
+        def __init__(self, *a: Any, **k: Any) -> None:
+            super().__init__(*a, **k)
+            attempts.append(1)
+
+        def connect(self) -> None:
+            if exc is not None and stage == "connect":
+                raise exc
+
+        def authenticate(self, a: str, v: str) -> str:
+            if exc is not None and stage == "authenticate":
+                raise exc
+            return "1"
+
+        def create_context(self, c: str) -> None:
+            if exc is not None and stage == "context":
+                raise exc
+
+    monkeypatch.setattr(rpc, "VistABroker", lambda host, port, timeout, app_name: B(host, port, timeout, app_name))
+    return attempts
+
+
+@pytest.mark.parametrize(
+    ("exc_name", "stage"),
+    [("AuthenticationError", "authenticate"), ("HandshakeError", "connect"), ("ContextError", "context")],
+)
+def test_bad_credentials_make_exactly_one_signon_attempt_then_fast_fail(
+    monkeypatch: pytest.MonkeyPatch, exc_name: str, stage: str
+) -> None:
+    from vista_clients.rpc import errors
+
+    from app.adapters.vista.rpc import VistaAuthError, VistaCircuitOpenError
+
+    attempts = _signon_broker(monkeypatch, getattr(errors, exc_name)("bad verify code"), stage)
+    clock = _Clock()
+    c = BrokerRpcClient("h", 1, "a", "v", "ctx", 1.0, clock=clock)
+    with pytest.raises(VistaAuthError):
+        c.call("X")
+    for _ in range(3):  # three more bad-credential calls: none may touch the network
+        with pytest.raises(VistaCircuitOpenError, match="not retrying"):
+            c.call("X")
+    assert len(attempts) == 1 and c.signon_attempts == 1
+    h = c.health()
+    assert h["state"] == "auth-blocked" and h["reachable"] is False
+    clock.t += 301  # cool-down over: exactly one more attempt is allowed
+    with pytest.raises(VistaAuthError):
+        c.call("X")
+    assert len(attempts) == 2
+
+
+def test_connect_failure_is_not_retried_and_opens_circuit(monkeypatch: pytest.MonkeyPatch) -> None:
+    from vista_clients.rpc.errors import BrokerConnectionError
+
+    from app.adapters.vista.rpc import VistaCircuitOpenError
+
+    attempts = _signon_broker(monkeypatch, BrokerConnectionError("refused"), "connect")
+    clock = _Clock()
+    c = BrokerRpcClient("h", 1, "a", "v", "ctx", 1.0, breaker_cooldown_s=15, clock=clock)
+    with pytest.raises(VistaUnavailableError, match="refused"):
+        c.call("X")
+    assert len(attempts) == 1  # a failed *connect* is not retried inside the call
+    with pytest.raises(VistaCircuitOpenError):
+        c.call("X")
+    assert len(attempts) == 1  # fast-fail while open
+    assert c.health()["state"] == "circuit-open"
+    clock.t += 16
+    with pytest.raises(VistaUnavailableError, match="refused"):
+        c.call("X")  # half-open probe
+    assert len(attempts) == 2
+
+
+def test_circuit_closes_after_recovery(patched_broker: None) -> None:
+    clock = _Clock()
+    c = BrokerRpcClient("h", 1, "a", "v", "ctx", 1.0, clock=clock)
+    assert c.call("X") == "reply:X:0"
+    assert c.health()["state"] == "connected" and c.health()["reachable"] is True
+
+
+def test_busy_broker_fails_fast_instead_of_queueing(patched_broker: None) -> None:
+    c = BrokerRpcClient("h", 1, "a", "v", "ctx", 1.0, lock_wait_s=0.05)
+    with c._lock, pytest.raises(VistaUnavailableError, match="busy"):
+        c.call("X")

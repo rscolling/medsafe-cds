@@ -25,12 +25,18 @@ from typing import Any
 
 from app.adapters.base import PatientSummary, Resource, SourceUnavailableError
 from app.adapters.vista import parsing
+from app.adapters.vista.fileman import fileman_key
 from app.adapters.vista.rpc import RecordedRpcClient, RpcClient, VistaUnavailableError
 
 logger = logging.getLogger("medsafe.vista")
 
-MAX_LAB_SETS = 30  # safety cap on backwards paging (VEHU max observed for real patients ~60)
+# Safety cap on backwards paging, one INTERIMG call per collection. Measured on VEHU: real patients have up to ~150
+# collections (DFN 100000 has 147). 200 leaves headroom; hitting it is logged and flagged (never silent).
+MAX_LAB_SETS = 200
 FAR_FUTURE_FM = "3300101"
+MAX_CACHE_ENTRIES = 512
+STATUS_TTL_S = 10.0
+TRUNCATED_TAG = {"system": "urn:medsafe:data", "code": "labs-truncated"}
 _DFN_RE = re.compile(r"[0-9]{1,12}")
 
 
@@ -41,6 +47,7 @@ class _Bundle:
     problems: list[Resource]
     observations: list[Resource]
     fetched_at: float
+    labs_truncated: bool = False
 
 
 @dataclass(frozen=True)
@@ -104,71 +111,142 @@ class VistaAdapter:
         overlay: dict[str, OverlayPatient] | None = None,
         excluded_dfns: tuple[str, ...] = ("100897",),
         cache_ttl_s: float = 60.0,
+        max_cache_entries: int = MAX_CACHE_ENTRIES,
+        fetch_deadline_s: float = 10.0,
+        max_lab_sets: int = MAX_LAB_SETS,
+        pending_active: bool = True,
     ) -> None:
         self._client = client
         self.mode = mode  # "live" | "recorded"
         self._demo = demo_patients
         self._overlay = overlay or {}
         self._overlay_client = OverlayRpcClient(self._overlay)
-        self._excluded = set(excluded_dfns)
+        self._excluded = {_normalise_dfn(d) or d for d in excluded_dfns}
         self._ttl = cache_ttl_s
+        self._max_cache = max(1, max_cache_entries)
+        self._deadline_s = fetch_deadline_s
+        self._max_lab_sets = max_lab_sets
+        self._pending_active = pending_active
         self._cache: dict[str, _Bundle] = {}
         self._lock = threading.Lock()
+        self._inflight: dict[str, threading.Lock] = {}  # per-DFN single-flight
+        self._status: tuple[float, dict[str, Any]] | None = None
+        self.truncated_fetches = 0  # counter: lab paging cap or unparseable page hit
+        self.head_disagreements = 0  # counter: NEWOLD newest != INTERIMG chain head (L15)
 
     # ------------------------------------------------------------ helpers
     def _rpc(self, patient_id: str) -> RpcClient:
         return self._overlay_client if patient_id in self._overlay else self._client
 
     def _bundle(self, patient_id: str) -> _Bundle:
-        if not _DFN_RE.fullmatch(patient_id):
-            raise SourceUnavailableError("invalid VistA patient id (DFN must be digits)")
-        if patient_id in self._excluded:
+        dfn = _normalise_dfn(patient_id)
+        if dfn is None:
+            raise SourceUnavailableError("invalid VistA patient id (DFN must be a positive integer)")
+        if dfn in self._excluded:
             raise SourceUnavailableError("patient is excluded from demos (junk data)")
+        hit = self._cached(dfn)
+        if hit is not None:
+            return hit
         with self._lock:
-            hit = self._cache.get(patient_id)
+            gate = self._inflight.setdefault(dfn, threading.Lock())
+        with gate:  # single-flight: concurrent requests for one DFN share one fetch
+            try:
+                hit = self._cached(dfn)
+                if hit is not None:
+                    return hit
+                try:
+                    bundle = self._fetch(dfn)
+                except VistaUnavailableError as exc:
+                    raise SourceUnavailableError(str(exc)) from exc
+                except ValueError as exc:  # nonexistent patient / unparseable reply: never guess, never "no data"
+                    raise SourceUnavailableError(str(exc)) from exc
+                self._store(dfn, bundle)
+                return bundle
+            finally:
+                with self._lock:
+                    self._inflight.pop(dfn, None)
+
+    def _cached(self, dfn: str) -> _Bundle | None:
+        with self._lock:
+            hit = self._cache.get(dfn)
             if hit and time.monotonic() - hit.fetched_at < self._ttl:
                 return hit
-        try:
-            bundle = self._fetch(patient_id)
-        except VistaUnavailableError as exc:
-            raise SourceUnavailableError(str(exc)) from exc
-        except ValueError as exc:  # nonexistent patient / unparseable reply: never guess, never "no data"
-            raise SourceUnavailableError(str(exc)) from exc
+        return None
+
+    def _store(self, dfn: str, bundle: _Bundle) -> None:
+        """Bounded cache: drop expired entries first, then the oldest, so memory cannot grow without limit."""
         with self._lock:
-            self._cache[patient_id] = bundle
-        return bundle
+            self._cache[dfn] = bundle
+            if len(self._cache) > self._max_cache:
+                now = time.monotonic()
+                for k in [k for k, v in self._cache.items() if now - v.fetched_at >= self._ttl]:
+                    del self._cache[k]
+                while len(self._cache) > self._max_cache:
+                    del self._cache[min(self._cache, key=lambda k: self._cache[k].fetched_at)]
 
     def _fetch(self, dfn: str) -> _Bundle:
-        rpc = self._rpc(dfn)
+        rpc: RpcClient = _Deadline(self._rpc(dfn), self._deadline_s)
         patient = parsing.parse_patient_select(dfn, rpc.call("ORWPT SELECT", dfn))
         if dfn in self._overlay:
             patient["meta"] = {"tag": [{"system": "urn:medsafe:data", "code": "synthetic-overlay"}]}
         meds = [
             r
             for m in parsing.parse_active_meds(rpc.call("ORWPS ACTIVE", dfn, "0", "1", "0"))
-            if (r := parsing.med_to_medication_request(dfn, m)) is not None
+            if (r := parsing.med_to_medication_request(dfn, m, pending_active=self._pending_active)) is not None
         ]
         problems = parsing.parse_problems(dfn, rpc.call("ORQQPL LIST", dfn, "A"))
-        observations = self._fetch_labs(rpc, dfn)
+        observations, truncated = self._fetch_labs(rpc, dfn)
+        if truncated:
+            patient.setdefault("meta", {}).setdefault("tag", []).append(dict(TRUNCATED_TAG))
         try:
             observations += parsing.parse_weight(dfn, rpc.call("ORQQVI VITALS", dfn, "", ""))
         except VistaUnavailableError:
             logger.debug("no recorded vitals")
-        return _Bundle(patient, meds, problems, observations, time.monotonic())
+        return _Bundle(patient, meds, problems, observations, time.monotonic(), labs_truncated=truncated)
 
-    def _fetch_labs(self, rpc: RpcClient, dfn: str) -> list[Resource]:
-        newest, _ = parsing.newest_oldest(rpc.call("ORWLRR NEWOLD", dfn))
-        if newest is None:
-            return []
+    def _fetch_labs(self, rpc: RpcClient, dfn: str) -> tuple[list[Resource], bool]:
+        """Page lab collections newest to oldest. Returns ``(observations, truncated)``.
+
+        ``truncated`` is True when paging stopped for any reason other than reaching the oldest collection
+        (cap hit, unparseable page). It is logged, counted and tagged on the Patient, never silent.
+        """
+        raw_newold = rpc.call("ORWLRR NEWOLD", dfn)
+        if parsing.newold_is_garbage(raw_newold):
+            # A reply that is neither "^" (no labs) nor a FileMan pair is an error in disguise, not "no labs".
+            raise ValueError("ORWLRR NEWOLD returned an unparseable reply")
+        head = parsing.newest_raw(raw_newold)
+        if not head:
+            return [], False
         sets: list[parsing.LabSet] = []
         before = FAR_FUTURE_FM
-        for _ in range(MAX_LAB_SETS):
-            s = parsing.parse_lab_set(rpc.call("ORWLRR INTERIMG", dfn, before, "1", "1"))
-            if s is None or s.collected >= before:
+        truncated = False
+        for _ in range(self._max_lab_sets):
+            raw = rpc.call("ORWLRR INTERIMG", dfn, before, "1", "1")
+            if not raw.strip():
+                break  # no collection older than `before`: reached the oldest
+            s = parsing.parse_lab_set(raw)
+            key, prev = (fileman_key(s.collected) if s else None), fileman_key(before)
+            if s is None or key is None or (prev is not None and key >= prev):
+                logger.warning("lab paging stopped on an unusable page", extra={"rpc": "ORWLRR INTERIMG"})
+                truncated = True
                 break
             sets.append(s)
             before = s.collected
-        return parsing.lab_sets_to_observations(dfn, sets)
+        else:
+            truncated = True
+        if truncated:
+            self.truncated_fetches += 1
+            logger.warning(
+                "lab history may be incomplete (paging cap %d or bad page): treat 'no recent lab' as unknown",
+                self._max_lab_sets,
+            )
+        if sets and fileman_key(head) != fileman_key(sets[0].collected):
+            self.head_disagreements += 1
+            logger.warning("ORWLRR NEWOLD newest does not match the INTERIMG chain head; using the chain")
+        elif not sets:
+            self.head_disagreements += 1
+            logger.warning("ORWLRR NEWOLD reports labs but INTERIMG returned none")
+        return parsing.lab_sets_to_observations(dfn, sets), truncated
 
     # ------------------------------------------------------------ interface
     def list_patients(self) -> list[PatientSummary]:
@@ -193,16 +271,61 @@ class VistaAdapter:
         return list(self._bundle(patient_id).observations)
 
     def status(self) -> dict[str, Any]:
-        info: dict[str, Any] = {"mode": self.mode, "overlay_patients": len(self._overlay)}
-        if self.mode == "live":
-            try:
-                self._client.call("ORWPT SELECT", self._demo[0]["dfn"])
-                info["reachable"] = True
-            except VistaUnavailableError as exc:
-                info.update(reachable=False, error=str(exc))
-        else:
+        """Cheap, bounded status: no RPC under the broker lock and at most one probe per STATUS_TTL_S."""
+        info: dict[str, Any] = {
+            "mode": self.mode,
+            "overlay_patients": len(self._overlay),
+            "cached_patients": len(self._cache),
+            "truncated_lab_fetches": self.truncated_fetches,
+            "lab_head_disagreements": self.head_disagreements,
+            "unknown_med_statuses": dict(parsing.UNKNOWN_STATUS_COUNTS),
+        }
+        if self.mode != "live":
             info["reachable"] = True
-        return info
+            return info
+        health = getattr(self._client, "health", None)
+        snap: dict[str, Any] = health() if callable(health) else {}
+        if snap:
+            info["broker"] = snap
+        if snap.get("state") in ("auth-blocked", "circuit-open"):
+            info.update(reachable=False, error=snap.get("last_error", "VistA unavailable"))
+            return info
+        now = time.monotonic()
+        if self._status is not None and now - self._status[0] < STATUS_TTL_S:
+            return {**info, **self._status[1]}
+        try:
+            self._client.call("ORWPT SELECT", self._demo[0]["dfn"])
+            probe: dict[str, Any] = {"reachable": True}
+        except VistaUnavailableError as exc:
+            probe = {"reachable": False, "error": str(exc)}
+        self._status = (now, probe)
+        return {**info, **probe}
+
+    def close(self) -> None:
+        self._client.close()
+
+
+def _normalise_dfn(raw: str) -> str | None:
+    """Canonical DFN: digits only, no leading zeros, > 0. '0100897' and '100897' are the same patient."""
+    if not _DFN_RE.fullmatch(raw):
+        return None
+    n = int(raw)
+    return str(n) if n > 0 else None
+
+
+class _Deadline:
+    """Wraps an RpcClient so one patient fetch has a total time budget (a slow broker cannot hold a thread)."""
+
+    def __init__(self, inner: RpcClient, budget_s: float) -> None:
+        self._inner, self._end = inner, time.monotonic() + budget_s
+
+    def call(self, rpc: str, *params: str) -> str:
+        if time.monotonic() > self._end:
+            raise VistaUnavailableError("VistA fetch exceeded its time budget")
+        return self._inner.call(rpc, *params)
+
+    def close(self) -> None:
+        self._inner.close()
 
 
 def recorded_client(recorded_dir: Path) -> RecordedRpcClient:

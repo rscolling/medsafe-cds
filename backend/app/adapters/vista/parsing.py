@@ -97,9 +97,24 @@ def parse_active_meds(raw: str) -> list[VistaMed]:
     return meds
 
 
-def med_to_medication_request(dfn: str, med: VistaMed) -> Resource | None:
+# Statuses known to mean "not a current medication" (so they are dropped quietly). Anything in neither map is
+# UNKNOWN: it is dropped too (never guessed active) but logged and counted so a new VistA status is noticed.
+KNOWN_INACTIVE_STATUS = {
+    "DISCONTINUED", "EXPIRED", "DELETED", "COMPLETE", "DISCONTINUED (EDIT)", "DISCONTINUED BY PROVIDER",
+    "CANCELLED", "LAPSED", "NON-VERIFIED", "UNRELEASED", "RENEWED", "DONE",
+}  # fmt: skip
+UNKNOWN_STATUS_COUNTS: dict[str, int] = {}
+
+
+def med_to_medication_request(dfn: str, med: VistaMed, *, pending_active: bool = True) -> Resource | None:
     status = CURRENT_STATUS.get(med.status)
+    if status is not None and med.status == "PENDING" and not pending_active:
+        return None
     if status is None:
+        key = med.status.upper()[:40] or "(blank)"
+        if key not in KNOWN_INACTIVE_STATUS:
+            UNKNOWN_STATUS_COUNTS[key] = UNKNOWN_STATUS_COUNTS.get(key, 0) + 1
+            logger.warning("unknown ORWPS status treated as not current", extra={"status": key})
         return None
     res: Resource = {
         "resourceType": "MedicationRequest",
@@ -319,6 +334,14 @@ def newest_oldest(raw: str) -> tuple[date | None, date | None]:
     """ORWLRR NEWOLD -> ``newestFM^oldestFM`` (``^`` alone = no labs)."""
     a, _, b = raw.strip().partition("^")
     return fileman_to_date(a), fileman_to_date(b)
+
+
+def newold_is_garbage(raw: str) -> bool:
+    """True when an ORWLRR NEWOLD reply is neither 'no labs' ('', '^') nor a parseable ``newest^oldest`` pair."""
+    a, _, b = raw.strip().partition("^")
+    if not a.strip() and not b.strip():
+        return False
+    return fileman_to_date(a) is None or (bool(b.strip()) and fileman_to_date(b) is None)
 
 
 def newest_raw(raw: str) -> str:
