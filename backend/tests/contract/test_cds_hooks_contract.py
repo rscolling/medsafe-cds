@@ -153,7 +153,11 @@ def test_dose_update_suggestion_carries_full_resource(client: TestClient) -> Non
     assert action["resource"]["dosageInstruction"][0]["doseAndRate"][0]["doseQuantity"]["value"] == 2.5
 
 
-def test_prefetch_only_request_without_backend_lookup(client: TestClient, service) -> None:  # type: ignore[no-untyped-def]
+def test_prefetch_only_request_without_backend_lookup(client: TestClient, service, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from datetime import date
+
+    # Prefetch uses the wall clock by default (M8); pin "today" so the 90-day window is deterministic.
+    monkeypatch.setattr(service, "today", lambda: date(2026, 9, 1))
     src = service.sources["fhir"]
     pf = {
         "patient": src.get_patient("hand-01"),

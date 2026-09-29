@@ -6,14 +6,17 @@ import hmac
 import logging
 import time
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
+from datetime import date
 from typing import Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.adapters.base import PatientSource, SourceUnavailableError
@@ -100,21 +103,54 @@ def create_app(
     sources: dict[str, PatientSource] | None = None,
     engine: RulesEngine | None = None,
     audit: AuditStore | None = None,
+    today: Callable[[], date] | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     configure_logging(settings.log_level)
     engine = engine or RulesEngine.from_dir(settings.rules_dir)
     service = CdsService(engine, sources if sources is not None else build_sources(settings))
+    if today is not None:
+        service.today = today
+    # M8: `auto` = wall clock for caller-supplied prefetch data (production semantics), record-anchored for the
+    # bundled fixtures / VEHU (their dates are historical). An explicit `today` or `anchored` applies to everything.
+    if settings.as_of_policy in ("today", "anchored"):
+        service.as_of_policy = service.prefetch_policy = settings.as_of_policy
+    else:
+        service.prefetch_policy = "today"
     audit = audit or AuditStore(settings.audit_db)
     metrics = Metrics()
     metrics.rules_loaded.set(len(engine.rules))
     limiter = RateLimiter(settings.rate_limit_per_minute)
+    ip_header = settings.client_ip_header.strip().lower()
+
+    def _client_key(request: Request) -> str:
+        """Rate-limit key. Behind a proxy every request shares the proxy's socket IP (one bucket for everyone), so an
+        operator can name a *trusted* header (MEDSAFE_CLIENT_IP_HEADER). Its last entry is used: that is the one the
+        trusted proxy appended, whereas earlier entries are client-controlled."""
+        if ip_header:
+            value = request.headers.get(ip_header, "")
+            if value:
+                return value.split(",")[-1].strip()[:64] or "unknown"
+        return request.client.host if request.client else "unknown"
 
     settings.enforce_security(logger)  # production: raises InsecureConfigError; dev: loud warnings
     # Interactive docs are only served in keyless local dev; with an API key configured they are switched off
     # (a browser cannot send X-API-Key to /openapi.json). redirect_slashes off: both paths are served explicitly.
     docs_on = not settings.audit_api_key and settings.env != "production"
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        yield
+        for name, src in service.sources.items():  # L7: release broker sockets / HTTP pools on shutdown
+            close = getattr(src, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception:  # noqa: BLE001 - shutdown must finish
+                    logger.warning("closing source failed", extra={"source": name}, exc_info=True)
+
     app = FastAPI(
+        lifespan=lifespan,
         title="medsafe-cds",
         version="0.1.0",
         description=f"CDS Hooks prototype. {DISCLAIMER}",
@@ -129,13 +165,6 @@ def create_app(
         metrics,
         settings,
     )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=list(settings.cors_origins),
-        allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type", "X-API-Key"],
-    )
-    app.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_body_bytes)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(_request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -145,7 +174,6 @@ def create_app(
         ]
         return JSONResponse({"detail": detail}, status_code=422)
 
-    @app.middleware("http")
     async def observe(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         rid = request.headers.get("x-request-id") or uuid.uuid4().hex[:16]
         token = request_id_var.set(rid)
@@ -153,8 +181,7 @@ def create_app(
         path = request.url.path
         try:
             if path not in _NOT_RATE_LIMITED and request.method != "OPTIONS":
-                client = request.client.host if request.client else "unknown"
-                allowed, retry = limiter.allow(client)
+                allowed, retry = limiter.allow(_client_key(request))
                 if not allowed:
                     metrics.rate_limited.inc()
                     response: Response = JSONResponse(
@@ -186,6 +213,17 @@ def create_app(
         )
         request_id_var.reset(token)
         return response
+
+    # Order matters (last added = outermost): body limit innermost, then observe (rate limit, metrics, request id), CORS
+    # outermost so that 413 / 429 / 500 responses also carry CORS headers and the browser UI can read the error instead of a CORS failure.
+    app.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_body_bytes)
+    app.add_middleware(BaseHTTPMiddleware, dispatch=observe)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_origins),
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type", "X-API-Key"],
+    )
 
     # ------------------------------------------------------------------ CDS Hooks
     @app.get("/cds-services")
@@ -240,7 +278,10 @@ def create_app(
             )
         mode = SERVICES[service_id][0]
         raw_source = (req.extension or {}).get("org.medsafe.source", "fhir")
-        source = raw_source if isinstance(raw_source, str) else ""
+        # Whitelist: `source` becomes a Prometheus label and an audit column, so it must never be caller-controlled text.
+        if not isinstance(raw_source, str) or raw_source not in {*service.sources, "prefetch"}:
+            raise HTTPException(status_code=422, detail="unknown data source")
+        source = raw_source
         rid = request_id_var.get()
         ids = (patient_id,)
         try:
@@ -253,7 +294,8 @@ def create_app(
                     _bundle_entries(pf["conditions"]),
                     _bundle_entries(pf["observations"]),
                     source="prefetch",
-                    as_of_policy=service.as_of_policy,
+                    as_of_policy=service.prefetch_policy,
+                    today=service.today(),
                 )
                 source = "prefetch"
             else:
@@ -272,7 +314,7 @@ def create_app(
                     metrics.alerts.labels("unchecked-order", mode, source, "data_gap").inc()
                     cards.append(unchecked_card(evaluated.unchecked_reason, mode))
                 for alert in evaluated.result.alerts:
-                    card = alert_to_card(alert, draft)
+                    card = alert_to_card(alert, draft, as_of=ctx.as_of.isoformat(), as_of_policy=ctx.as_of_policy)
                     cards.append(card)
                     metrics.alerts.labels(alert.rule_id, mode, source, "data_gap" if alert.data_gap else "fire").inc()
                     audit.record_alert(
@@ -315,11 +357,20 @@ def create_app(
         return {}
 
     # ------------------------------------------------------------------ UI helper API
-    @app.get("/api/sources")
+    # /api/sources, /api/patients and /api/compare disclose patient labels/clinical data and trigger source I/O, so they
+    # require X-API-Key whenever one is configured (the bundled demo UI is for keyless localhost use).
+    def require_key(x_api_key: str | None = Header(default=None)) -> None:
+        # Compare bytes: hmac.compare_digest raises TypeError (-> 500) on non-ASCII str.
+        if settings.audit_api_key and not hmac.compare_digest(
+            (x_api_key or "").encode("utf-8", "replace"), settings.audit_api_key.encode("utf-8")
+        ):
+            raise HTTPException(status_code=401, detail="invalid or missing X-API-Key")
+
+    @app.get("/api/sources", dependencies=[Depends(require_key)])
     def list_sources() -> dict[str, Any]:
         return {name: src.status() for name, src in service.sources.items()}
 
-    @app.get("/api/patients")
+    @app.get("/api/patients", dependencies=[Depends(require_key)])
     def patients(source: str) -> list[dict[str, str]]:
         try:
             src = service.source(source)
@@ -335,7 +386,7 @@ def create_app(
     def rules() -> list[dict[str, str]]:
         return engine.catalog()
 
-    @app.post("/api/compare")
+    @app.post("/api/compare", dependencies=[Depends(require_key)])
     def compare(req: CompareRequest) -> dict[str, Any]:
         """Run both modes on the same data and show which alerts context suppressed (used by the UI)."""
         try:
@@ -358,9 +409,12 @@ def create_app(
                 "source": ctx.source,
                 "sex": ctx.sex,
                 "as_of": ctx.as_of.isoformat(),
+                "as_of_policy": ctx.as_of_policy,
                 "age": round(ctx.age_years() or 0),
                 "meds": [m.name for m in ctx.meds],
                 "unmapped_meds": ctx.unmapped_meds,
+                "excluded_meds": ctx.excluded_meds,
+                "partial_meds": ctx.partial_meds,
                 "conditions": sorted(ctx.conditions),
                 "egfr": _lab(ctx, "egfr"),
                 "creatinine": _lab(ctx, "creatinine"),
@@ -368,8 +422,12 @@ def create_app(
                 "weight": _lab(ctx, "weight"),
             },
             "order": base.order.name,
+            "unchecked_reason": cont.unchecked_reason,
             "baseline": [alert_to_card(a, draft) for a in base.result.alerts],
-            "context": [alert_to_card(a, draft) for a in cont.result.alerts],
+            "context": [
+                alert_to_card(a, draft, as_of=ctx.as_of.isoformat(), as_of_policy=ctx.as_of_policy)
+                for a in cont.result.alerts
+            ],
             "suppressed": [
                 {"ruleId": s.rule_id, "ruleVersion": s.rule_version, "reasons": list(s.reason)}
                 for s in cont.result.suppressed
@@ -377,12 +435,10 @@ def create_app(
         }
 
     # ------------------------------------------------------------------ audit (protected when a key is set)
-    def require_key(x_api_key: str | None = Header(default=None)) -> None:
-        if settings.audit_api_key and not hmac.compare_digest(x_api_key or "", settings.audit_api_key):
-            raise HTTPException(status_code=401, detail="invalid or missing X-API-Key")
-
     @app.get("/api/audit", dependencies=[Depends(require_key)])
-    def audit_events(kind: str | None = None, rule_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+    def audit_events(
+        kind: str | None = None, rule_id: str | None = None, limit: int = Query(default=100, ge=1, le=1000)
+    ) -> list[dict[str, Any]]:
         return audit.query(kind, rule_id, limit)
 
     @app.get("/api/audit/summary", dependencies=[Depends(require_key)])
@@ -398,13 +454,20 @@ def create_app(
     def ready(response: Response) -> dict[str, Any]:
         checks: dict[str, Any] = {"rules": len(engine.rules), "audit_db": audit.ping()}
         ok = len(engine.rules) > 0
+        degraded: list[str] = []
         for name, src in service.sources.items():
-            st = src.status()
+            st = src.status()  # cheap: cached / breaker state, never a blocking RPC under the connection lock
             checks[name] = st
-            # The service is "ready" if at least the rules load; sources degrade to fail-open.
+            if st.get("reachable") is False:
+                degraded.append(name)
+        # Sources degrade to fail-open (no cards + X-Medsafe-Degraded), so the service stays "ready" while a source is
+        # down, but the outage is reported here instead of being invisible.
         if not ok:
             response.status_code = 503
-        return {"status": "ready" if ok else "not-ready", "checks": checks}
+        out: dict[str, Any] = {"status": "ready" if ok else "not-ready", "checks": checks}
+        if degraded:
+            out["degraded"] = degraded
+        return out
 
     @app.get("/metrics", dependencies=[Depends(require_key)])
     def prometheus() -> Response:

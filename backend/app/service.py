@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Any
 
 from app.adapters.base import PatientSource, SourceUnavailableError
@@ -38,6 +39,8 @@ class CdsService:
         self.sources = sources
         self.as_of_policy = as_of_policy  # default; per-source overrides in ``as_of_policy_by_source``
         self.as_of_policy_by_source: dict[str, str] = {}
+        self.prefetch_policy = as_of_policy  # policy for caller-supplied prefetch data
+        self.today: Callable[[], date] = lambda: datetime.now(UTC).date()  # injectable clock (tests)
 
     def policy_for(self, source: str) -> str:
         return self.as_of_policy_by_source.get(source, self.as_of_policy)
@@ -58,6 +61,7 @@ class CdsService:
             source=source,
             as_of=as_of,
             as_of_policy=self.policy_for(source),
+            today=self.today(),
         )
 
     def evaluate(self, source: str, patient_id: str, draft: Resource, mode: str) -> Evaluated:
@@ -94,14 +98,13 @@ class CdsService:
             suppressed.pop(rule_id, None)
         merged = EvaluationResult(mode, tuple(alerts.values()), tuple(suppressed.values()))
         partial = next((o for o in mapped if o.partial), None)
-        reason = (
-            "only part of this combination product was recognised, so checks for its other ingredients were not run"
-            if partial
-            else None
-        )
-        if reason:
+        partial_reason: str | None = None
+        if partial:
+            partial_reason = (
+                "only part of this combination product was recognised, so checks for its other ingredients were not run"
+            )
             logger.warning("draft order only partly recognised", extra={"order_fingerprint": short_hash(mapped[0].raw)})
-        return Evaluated(ctx, mapped[0], merged, unchecked_reason=reason, orders=tuple(mapped))
+        return Evaluated(ctx, mapped[0], merged, unchecked_reason=partial_reason, orders=tuple(mapped))
 
 
 def _unchecked_reason(order: DrugRef) -> str:

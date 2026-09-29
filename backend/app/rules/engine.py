@@ -218,7 +218,7 @@ class RulesEngine:
             rule_version=rule.version,
             mode=mode,
             indicator=indicator,
-            summary=summary[:139],
+            summary=truncate_summary(summary),
             detail=detail,
             why=why,
             source_label=rule.card.source.label,
@@ -229,6 +229,15 @@ class RulesEngine:
             data_gap=bool(extra.get("data_gap", False)),
             facts={k: v for k, v in merged.items() if isinstance(v, str | int | float)},
         )
+
+
+def truncate_summary(text: str, limit: int = 140) -> str:
+    """CDS Hooks summaries are <= 140 chars: cut at a word boundary and mark the cut with an ellipsis."""
+    text = " ".join(text.split())
+    if len(text) <= limit:
+        return text
+    cut = text[: limit - 1].rsplit(" ", 1)[0].rstrip(" ,;:-\u2013")
+    return (cut or text[: limit - 1]) + "\u2026"
 
 
 def _fmt_baseline_summary(rule: Rule) -> str:

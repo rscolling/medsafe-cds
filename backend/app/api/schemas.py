@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CdsRequest(BaseModel):
@@ -16,6 +17,15 @@ class CdsRequest(BaseModel):
     context: dict[str, Any]
     prefetch: dict[str, Any] | None = None
     extension: dict[str, Any] | None = None
+
+    @field_validator("hookInstance")
+    @classmethod
+    def _hook_instance_is_uuid(cls, v: str) -> str:
+        try:
+            uuid.UUID(v)
+        except ValueError:
+            raise ValueError("hookInstance must be a UUID (CDS Hooks 2.0)") from None
+        return v
 
 
 class Coding(BaseModel):

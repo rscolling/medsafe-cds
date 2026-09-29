@@ -162,7 +162,7 @@ class AuditStore:
             sql += " AND rule_id=?"
             args.append(rule_id)
         sql += " ORDER BY id DESC LIMIT ?"
-        args.append(min(limit, 1000))
+        args.append(max(1, min(limit, 1000)))  # a negative LIMIT means 'all rows' in SQLite
         with self._lock:
             return [dict(r) for r in self._conn.execute(sql, args).fetchall()]
 

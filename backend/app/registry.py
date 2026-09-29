@@ -65,6 +65,8 @@ def build_vista(settings: Settings, client: RpcClient | None = None, mode: str |
                 settings.vista_verify,
                 settings.vista_context,
                 settings.vista_timeout_s,
+                auth_cooldown_s=settings.vista_auth_cooldown_s,
+                breaker_cooldown_s=settings.vista_breaker_cooldown_s,
             )
         else:
             client = recorded_client(vdir / "recorded")
@@ -75,6 +77,8 @@ def build_vista(settings: Settings, client: RpcClient | None = None, mode: str |
         overlay=overlay,
         excluded_dfns=settings.vista_excluded_dfns,
         cache_ttl_s=settings.vista_cache_ttl_s,
+        fetch_deadline_s=settings.vista_fetch_deadline_s,
+        pending_active=settings.vista_pending_active,
     )
 
 

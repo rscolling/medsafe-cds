@@ -131,6 +131,9 @@ class FhirAdapter:
             return self._search("Observation", {"patient": patient_id})
         return self._store.resources(patient_id, "Observation")
 
+    def close(self) -> None:
+        self._client.close()
+
     def status(self) -> dict[str, Any]:
         info: dict[str, Any] = {
             "mode": self.mode,

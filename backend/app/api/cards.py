@@ -85,7 +85,9 @@ def unchecked_card(reason: str, evaluated_mode: str) -> dict[str, Any]:
     }
 
 
-def alert_to_card(alert: Alert, order: Resource | None = None) -> dict[str, Any]:
+def alert_to_card(
+    alert: Alert, order: Resource | None = None, *, as_of: str | None = None, as_of_policy: str | None = None
+) -> dict[str, Any]:
     """Build a spec-conformant card. Optional fields are omitted when empty (spec: no null/empty)."""
     card: dict[str, Any] = {
         "uuid": str(uuid.uuid4()),
@@ -109,6 +111,10 @@ def alert_to_card(alert: Alert, order: Resource | None = None) -> dict[str, Any]
             "org.medsafe.disclaimer": DISCLAIMER,
         },
     }
+    if as_of:
+        card["extension"]["org.medsafe.asOf"] = as_of
+        card["extension"]["org.medsafe.asOfPolicy"] = as_of_policy or ""
+        card["detail"] += f"\n\n_Lab windows measured from {as_of} (as-of policy: {as_of_policy})._"
     defs = list(alert.suggestion_defs)
     suggestions: list[dict[str, Any]] = []
     for i, label in enumerate(alert.suggestions):
