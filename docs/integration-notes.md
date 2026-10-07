@@ -113,3 +113,31 @@ Fresh `git clone` into /tmp, `scripts/setup.sh`, on 2026-09-29 (Python 3.12.14, 
 - Live VEHU integration (`MEDSAFE_VISTA_MODE=live`): 11 passed including the full 12,837-call drift diff; 13 HAPI tests
   skipped (HAPI not up).
 - Still not verified: `docker compose up` end to end, rebuilt Docker images, and the GitHub Actions workflow.
+
+### HEAD 272f5a2 (after the QA3 fixes), 2026-09-29 to 2026-10-07
+
+- `make test` (fresh clone): 407 passed, 24 integration tests deselected, coverage 97.14%. e2e 7 passed; 240-combo
+  FHIR/VistA (recorded) parity 0 mismatches; `make compare` identical to the committed results.
+- GitHub Actions: [run 36620810105](https://github.com/rscolling/medsafe-cds/actions/runs/36620810105) on 272f5a2
+  passed, all four jobs green (backend, frontend, integration-hapi, security).
+- `docker compose up --build` verified end to end on the dev box: 310 synthetic patients loaded into HAPI, backend
+  healthy, UI on :5173. This closes the two "still not verified" items above (the compose stack and the workflow).
+- `make security` later failed locally on a new dev-only advisory, GHSA-68fv-2mgg-jv7q (source-map-js 1.2.1, via
+  vite -> postcss), published after the CI run; fixed on the next commits.
+
+### `prerecord-fixes` commits on top of 272f5a2, 2026-10-07
+
+- Changes: source-map-js 1.2.2; hand-authored synthetic patient K (LISINOPRIL-HCTZ 20-12.5 combination tablet, eGFR
+  ~40) with VistA twin DFN 9000011; baseline card titles say what baseline checked; FHIR source label follows the
+  served mode; NEWOLD/INTERIMG disagreement logged at INFO; `scripts/demo-calls.sh`.
+- `make test`: 414 passed, 25 integration tests deselected (the HAPI tests are parametrised per hand-authored file),
+  coverage 97.21% (gate 85%).
+- `make lint` clean (ruff, format check, `mypy app` strict, eslint 0 warnings, tsc). `npm run build` OK.
+- Playwright e2e (system Chrome): 9 passed (new: source label in fixtures mode; patient K fires on FHIR and VistA).
+- `make security`: pip-audit no known vulnerabilities, bandit clean, `npm audit` 0. gitleaks 8.21.2 on full history and
+  working tree: no leaks.
+- `make compare`: regenerated. Cohort 63.1% and recorded VEHU 86.8% unchanged; hand-authored and twin sections now
+  n=11 (88 evaluations, 56 baseline, 25 fire, 1 data gap, 53.6% suppressed); labeled scenarios TP=9 FP=6 baseline
+  (precision 0.6) vs TP=9 FP=0 context (precision 1.0), recall 1.0. No stderr output.
+- Not re-run on these commits: live VEHU and HAPI integration tests, `docker compose`, and GitHub Actions (nothing
+  pushed).
