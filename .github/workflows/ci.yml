@@ -1,6 +1,3 @@
-# NOTE: this workflow has not been executed by its author (no GitHub runner available while writing it);
-# every command in it was run locally, see README "Verification status".
-# TODO: delete these header comment lines after the first successful GitHub Actions run.
 name: ci
 on:
   pull_request:
