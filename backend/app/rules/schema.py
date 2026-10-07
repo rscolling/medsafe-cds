@@ -68,6 +68,9 @@ class Rule(Strict):
     id: str
     version: str = Field(pattern=r"^\d+\.\d+\.\d+$")
     title: str
+    # What baseline mode actually checked (drug classes only). Titles describe the context condition
+    # ("... with reduced eGFR"), which baseline never evaluates, so baseline cards use this instead.
+    baseline_title: str | None = None
     status: Literal["prototype"]
     match: Match
     context: Context = Field(default_factory=Context)

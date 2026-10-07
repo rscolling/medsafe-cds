@@ -1,6 +1,7 @@
 id: nsaid-raas-diuretic-aki
 version: 1.0.0
 title: 'NSAID + ACE inhibitor/ARB + diuretic ("triple whammy") with reduced renal function'
+baseline_title: "NSAID + ACE inhibitor/ARB + diuretic together"
 status: prototype
 match:
   groups: [[nsaid], [raas], [diuretic]]

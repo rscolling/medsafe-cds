@@ -1,6 +1,7 @@
 id: rivaroxaban-renal-dose
 version: 1.0.0
 title: "Rivaroxaban 20 mg daily with moderate renal impairment (NVAF)"
+baseline_title: "Rivaroxaban ordered"
 status: prototype
 match:
   groups: [[rivaroxaban]]

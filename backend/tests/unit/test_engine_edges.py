@@ -192,3 +192,22 @@ def test_predicate_helpers() -> None:
     assert not ok
     ok, text = _predicate(c, Predicate(lab="egfr", op=">=", value=60, within_days=90))
     assert not ok and "no egfr" in text
+
+
+def test_baseline_card_title_says_what_baseline_checked(service, engine) -> None:  # type: ignore[no-untyped-def]
+    # baseline never looks at eGFR, so a normal-eGFR patient's baseline card must not claim "reduced eGFR"
+    from app.service import draft_order
+
+    (alert,) = service.evaluate("fhir", "hand-02", draft_order("hand-02", "861007"), "baseline").result.alerts
+    assert alert.summary == "Metformin ordered (drug-class match)"
+    assert "reduced" not in alert.summary.lower()
+    for rule in engine.rules:
+        assert rule.baseline_title, f"{rule.id} needs a baseline_title"
+        assert len(f"{rule.baseline_title} (drug-class match)") <= 140
+
+
+def test_baseline_title_falls_back_to_title() -> None:
+    from app.rules.engine import _fmt_baseline_summary
+
+    rule = load_rules(Path(__file__).resolve().parents[3] / "rules")[0].model_copy(update={"baseline_title": None})
+    assert _fmt_baseline_summary(rule) == f"{rule.title} (drug-class match)"

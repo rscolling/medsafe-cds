@@ -1,6 +1,7 @@
 id: apixaban-dose-reduction
 version: 1.0.0
 title: "Apixaban 5 mg twice daily when dose-reduction criteria are met (NVAF)"
+baseline_title: "Apixaban ordered"
 status: prototype
 match:
   groups: [[apixaban]]
