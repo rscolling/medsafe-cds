@@ -85,6 +85,12 @@ test('every rendered card carries the disclaimer', async ({ page }) => {
   }
 })
 
+test('FHIR source label reflects the mode the backend serves (bundled fixtures here, not HAPI)', async ({ page }) => {
+  await expect(page.getByTestId('source-status')).toContainText('mode: fixtures')
+  await expect(page.getByLabel('FHIR R4 (bundled fixtures)')).toBeChecked()
+  await expect(page.getByText('FHIR R4 (HAPI)')).toHaveCount(0)
+})
+
 test('LISINOPRIL-HCTZ combo tablet + ibuprofen fires the triple-whammy rule on FHIR and on the VistA twin', async ({ page }) => {
   await prescribe(page, /^K\. NSAID \+ LISINOPRIL-HCTZ/, /ibuprofen 800/)
   await expect(page.getByTestId('panel-context').getByTestId('alert-card')).toHaveAttribute('data-rule', 'nsaid-raas-diuretic-aki')

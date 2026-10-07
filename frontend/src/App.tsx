@@ -6,6 +6,14 @@ import type { CompareResponse, Drug, PatientSummary, Source, SourceStatus } from
 
 const DISCLAIMER = 'Prototype, not clinical advice. Synthetic data only. No real patients.'
 
+// Label the FHIR source by what the backend actually serves (/api/sources mode), so a fixtures demo is not shown as HAPI.
+function sourceLabel(source: Source, mode?: string): string {
+  if (source === 'vista') return 'VistA (RPC Broker)'
+  if (mode === 'fixtures') return 'FHIR R4 (bundled fixtures)'
+  if (mode === 'http') return 'FHIR R4 (HAPI)'
+  return 'FHIR R4'
+}
+
 export default function App() {
   const [source, setSource] = useState<Source>('fhir')
   const [statuses, setStatuses] = useState<Partial<Record<string, SourceStatus>>>({})
@@ -75,7 +83,7 @@ export default function App() {
                 checked={source === s}
                 onChange={() => { setSource(s) }}
               />{' '}
-              {s === 'fhir' ? 'FHIR R4 (HAPI)' : 'VistA (RPC Broker)'}
+              {sourceLabel(s, statuses[s]?.mode)}
             </label>
           ))}
           {st && (
