@@ -247,7 +247,9 @@ class VistaAdapter:
             pass  # NEWOLD was unparseable: already counted above
         elif sets and fileman_key(head) != fileman_key(sets[0].collected):
             self.head_disagreements += 1
-            logger.warning("ORWLRR NEWOLD newest does not match the INTERIMG chain head; using the chain")
+            # cosmetic: the chain is authoritative and the disagreement is counted (status: lab_head_disagreements),
+            # so INFO, not WARNING (a WARNING reached stderr via logging's last-resort handler in make compare)
+            logger.info("ORWLRR NEWOLD newest does not match the INTERIMG chain head; using the chain")
         elif not sets:
             self.head_disagreements += 1
             logger.warning("ORWLRR NEWOLD reports labs but INTERIMG returned none")

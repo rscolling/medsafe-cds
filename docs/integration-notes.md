@@ -32,7 +32,7 @@
 - **Paging.** Real patients have up to ~150 lab collections (DFN 100000: 147), one INTERIMG call each. The cap is 200;
   paging compares FileMan values numerically and stops with a `labs-truncated` tag if a page fails to advance or the cap
   is reached. `ORWLRR NEWOLD` disagrees with the INTERIMG chain head for a few patients (2 of 110 recorded, e.g. DFN 737);
-  the chain is authoritative, the disagreement is logged and counted, and a NEWOLD reply that is neither `^` nor a FileMan
+  the chain is authoritative, the disagreement is logged at INFO and counted (`lab_head_disagreements` in `/ready`), and a NEWOLD reply that is neither `^` nor a FileMan
   pair is an error, not "no labs".
 - **`parse_response` bug (fixed in the fork).** Upstream treats any reply whose first byte is below 0x20 as
   an error length prefix, so a legitimate data reply such as `"\r\nNo Data Found"` raised a truncated

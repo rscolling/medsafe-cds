@@ -152,10 +152,12 @@ def test_l15_newold_head_disagreeing_with_chain_is_logged_and_counted(caplog: py
         {**BASE, "ORWLRR NEWOLD": "3000224.11431^3000101", "ORWLRR INTERIMG": chain(["3000209.114723", "3000101.1"])}
     )
     a = VistaAdapter(client, mode="live", demo_patients=DEMO)
-    with caplog.at_level("WARNING", logger="medsafe.vista"):
+    with caplog.at_level("INFO", logger="medsafe.vista"):
         obs, _ = a._fetch_labs(client, "1")
     assert len(obs) == 2  # the INTERIMG chain is authoritative
     assert a.head_disagreements == 1 and "does not match" in caplog.text
+    # cosmetic, so INFO (not WARNING): it must not reach stderr via the last-resort handler in make compare
+    assert [r.levelname for r in caplog.records if "does not match" in r.getMessage()] == ["INFO"]
 
 
 def test_l15_garbage_newold_never_means_no_labs_and_never_fails_the_patient(caplog: pytest.LogCaptureFixture) -> None:
