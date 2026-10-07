@@ -4,6 +4,14 @@
 
 Start: `make demo` (or `make demo-local`), open the UI.
 
+Without the UI (or as a rehearsal check), `./scripts/demo-calls.sh` sends the raw CDS Hooks requests for the key
+cases on both sources (`fhir` and `vista`) to the running API (default `http://localhost:8080`, override with
+`MEDSAFE_API`): metformin with eGFR < 30 (critical card: seeded synthetic patient syn-0001 / public VEHU test patient
+DFN 100881), metformin with normal eGFR (baseline fires, context suppresses: hand-02 / twin 9000002), metformin with
+no renal labs (data-gap info card: hand-03 / twin 9000003), and ibuprofen on top of the LISINOPRIL-HCTZ combination
+tablet (triple whammy: hand-11 / twin 9000011). With `jq` installed it prints one line per card and exits 1 if any
+case does not return the expected card; `-v` prints each request and response.
+
 1. **The banner.** Point out the "Prototype, not clinical advice" banner and that all patients are synthetic.
 2. **True positive, FHIR.** Source FHIR, patient "A. Metformin, eGFR 30-45", drug metformin, *Sign order*.
    Baseline panel: 1 alert. Context panel: 1 card with the actual eGFR, the "why" bullets, the DailyMed source
