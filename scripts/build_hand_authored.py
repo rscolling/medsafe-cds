@@ -46,6 +46,13 @@ DRUGS = {
     ),
     "spironolactone": ("9997", "spironolactone", "SPIRONOLACTONE 25MG TAB", 25),
     "lithium": ("42351", "lithium carbonate", "LITHIUM CARBONATE 300MG CAP", 300),
+    # combination SCD: the mapper expands it to lisinopril 20 mg + hydrochlorothiazide 12.5 mg (no single dose)
+    "lisinopril-hctz": (
+        "197886",
+        "hydrochlorothiazide 12.5 MG / lisinopril 20 MG Oral Tablet",
+        "LISINOPRIL-HCTZ 20-12.5 TAB",
+        None,
+    ),
 }
 CONDS = {
     "t2dm": ("44054006", "Type 2 diabetes mellitus", "250.00"),
@@ -251,6 +258,26 @@ PATIENTS = [
                 ["lithium-interacting-drugs"],
                 True,
                 "control rule: context mode does not change",
+            )
+        ],
+    },
+    {
+        "id": "hand-11",
+        "label": "K. NSAID + LISINOPRIL-HCTZ combo tablet, eGFR ~40",
+        "sex": "female",
+        "age": 71,
+        "conds": ["htn", "ckd"],
+        "meds": ["lisinopril-hctz"],
+        "cr": 1.4,
+        "k": None,
+        "wt": 74,
+        "scenarios": [
+            (
+                "ibuprofen",
+                ["nsaid-raas-diuretic-aki"],
+                ["nsaid-raas-diuretic-aki"],
+                True,
+                "one combination tablet supplies both the ACEI and the thiazide; triple whammy with reduced eGFR",
             )
         ],
     },

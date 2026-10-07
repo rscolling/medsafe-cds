@@ -48,7 +48,7 @@
 - **Metformin patients (DFN 100151, 100157) have no labs**, so on native VEHU data the rule yields a data-gap
   card. The best lab patient (DFN 100881, creatinine 2.1, computed eGFR about 24) has no medications. The
   end-to-end metformin + low-eGFR demo on the VistA side therefore uses the labeled synthetic twin patients
-  (DFN 9000001-9000010, in `data/vista/overlay_patients.json`, not in VEHU). The twin overlay is stored as raw
+  (DFN 9000001-9000011, in `data/vista/overlay_patients.json`, not in VEHU). The twin overlay is stored as raw
   RPC reply text and goes through exactly the same parser as real VEHU output. A test asserts the same rule
   fires for VEHU 100881 (with a draft metformin order) and for twin 9000001.
 - **Junk patient DFN 100897** holds 1,430 orders (a drug-list test record) and is excluded.
@@ -72,7 +72,7 @@ not justified; the RPC adapter covers the same ground.
 ## FHIR
 
 - HAPI FHIR `hapiproject/hapi:v7.4.0`, R4, in-memory H2. `scripts/load_data.py` PUTs transaction bundles
-  (client-assigned ids, idempotent): 10 hand-authored patients and the seeded cohort. Real Synthea output can
+  (client-assigned ids, idempotent): 11 hand-authored patients and the seeded cohort. Real Synthea output can
   be loaded with `--synthea-dir`; **Synthea is optional** (`data/synthea/`), and the repo ships no Synthea output.
 - Mapping (`data/mapping/*.csv`): RxNorm ingredient and clinical-drug codes to ingredient class; LOINC
   (creatinine 2160-0, eGFR 62238-1 / 98979-8 / 33914-3, potassium 2823-3, weight 29463-7); SNOMED + ICD-9

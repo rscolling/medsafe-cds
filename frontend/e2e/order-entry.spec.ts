@@ -84,3 +84,13 @@ test('every rendered card carries the disclaimer', async ({ page }) => {
     await expect(c.getByTestId('card-disclaimer')).toContainText(DISCLAIMER)
   }
 })
+
+test('LISINOPRIL-HCTZ combo tablet + ibuprofen fires the triple-whammy rule on FHIR and on the VistA twin', async ({ page }) => {
+  await prescribe(page, /^K\. NSAID \+ LISINOPRIL-HCTZ/, /ibuprofen 800/)
+  await expect(page.getByTestId('panel-context').getByTestId('alert-card')).toHaveAttribute('data-rule', 'nsaid-raas-diuretic-aki')
+  await page.getByLabel('VistA (RPC Broker)').check()
+  await expect(page.getByTestId('source-status')).toContainText('mode:')
+  await prescribe(page, /^K\. NSAID \+ LISINOPRIL-HCTZ.*\[VistA twin/, /ibuprofen 800/)
+  await expect(page.getByTestId('panel-context').getByTestId('alert-card')).toHaveAttribute('data-rule', 'nsaid-raas-diuretic-aki')
+  await expect(page.getByTestId('egfr')).toContainText('computed')
+})

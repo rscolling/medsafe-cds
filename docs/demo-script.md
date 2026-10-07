@@ -17,10 +17,13 @@ Start: `make demo` (or `make demo-local`), open the UI.
    from creatinine, labelled "computed".
 6. **Context suppression with a rule that combines labs.** Patient "H. ACEI + KCl": potassium and eGFR
    reassuring, so suppressed; patient "I. ACEI + spironolactone, K 5.4": fires.
-7. **Control rule.** Patient "J. Lithium + NSAID": fires in both modes; context does not weaken it.
-8. **Override and audit.** Override a card with a coded reason; show `/api/audit/summary`.
-9. **Numbers.** `make compare`; state the limits (synthetic cohorts, n=10 labels, author-chosen prevalence).
-10. **Failure mode.** Stop the VistA source (or set a bad host): the API returns zero cards with an
+7. **Combination tablet, both sources.** Patient "K. NSAID + LISINOPRIL-HCTZ combo tablet, eGFR ~40", drug
+   ibuprofen: one tablet supplies the ACE inhibitor and the thiazide, so the order completes the NSAID + ACEI/ARB +
+   diuretic triple and the warning fires. Switch to VistA, pick its twin (DFN 9000011): same card, eGFR computed.
+8. **Control rule.** Patient "J. Lithium + NSAID": fires in both modes; context does not weaken it.
+9. **Override and audit.** Override a card with a coded reason; show `/api/audit/summary`.
+10. **Numbers.** `make compare`; state the limits (synthetic cohorts, n=14 labels, author-chosen prevalence).
+11. **Failure mode.** Stop the VistA source (or set a bad host): the API returns zero cards with an
     `X-Medsafe-Degraded` header instead of blocking the order.
 
 Talking points: why fail open, why data-gap cards, how the adapter interface keeps FHIR and VistA symmetric,

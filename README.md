@@ -70,7 +70,7 @@ This is a **localhost prototype**. Do not put it on a network, and never load re
 | VistA adapter (RPC Broker, live or recorded) + vendored client | `backend/app/adapters/vista/`, `backend/third_party/vista_clients/` |
 | CDS Hooks API, audit trail (SQLite), Prometheus metrics, rate limiting, structured logs | `backend/app/api/`, `audit/`, `metrics.py` |
 | React 19 + TypeScript UI with baseline vs context panels, "why" and override capture | `frontend/` |
-| Data: 10 hand-authored scenarios, seeded cohort, mapping tables, recorded VEHU replies | `data/` |
+| Data: 11 hand-authored patients (14 labeled scenarios), seeded cohort, mapping tables, recorded VEHU replies | `data/` |
 | Docs | [docs/architecture.md](docs/architecture.md), [docs/integration-notes.md](docs/integration-notes.md), [docs/brief.md](docs/brief.md), [docs/demo-script.md](docs/demo-script.md) |
 
 CDS Hooks endpoints: `GET /cds-services`, `POST /cds-services/medsafe-order-sign` (context-aware),
@@ -156,10 +156,10 @@ Precise coverage, test counts, and security-scan results are in the final sectio
 ## The comparison, and its limits
 
 `make compare` prints alert counts for baseline vs context-aware mode ([docs/results/baseline_comparison.txt](docs/results/baseline_comparison.txt)).
-On the seeded 300-patient cohort context mode suppresses 63.1% of baseline alerts (86.8% on the recorded VEHU cohort, where most orders simply find no matching class), and on the ten labeled
-scenarios precision goes 0.571 to 1.0 at recall 1.0. **Read those as a demonstration of the mechanism, not a
+On the seeded 300-patient cohort context mode suppresses 63.1% of baseline alerts (86.8% on the recorded VEHU cohort, where most orders simply find no matching class), and on the 14 labeled
+scenarios precision goes 0.6 to 1.0 at recall 1.0. **Read those as a demonstration of the mechanism, not a
 result**: the cohort's prevalence and lab distributions were chosen by the author, the labels are the
-author's judgement on n=10, there is no clinician review and no outcome data. Data-gap info cards are counted
+author's judgement on n=14 scenarios (11 patients), there is no clinician review and no outcome data. Data-gap info cards are counted
 separately from actionable alerts.
 
 ## VistA live mode
@@ -189,8 +189,8 @@ card and returned by `/api/compare`. `MEDSAFE_VISTA_PENDING_ACTIVE` (default tru
 
 `MEDSAFE_VISTA_MODE`: `live` (broker only), `recorded` (real replies captured from VEHU, used in CI), or
 `auto` (live if reachable and credentials set, else recorded). VEHU has no eGFR results and only two
-metformin patients (neither with labs), so the metformin + low-eGFR demo on the VistA side uses ten clearly
-labeled synthetic "twin" patients (DFN 9000001-9000010, `vehu-synthetic-overlay`) that exist only as raw RPC
+metformin patients (neither with labs), so the metformin + low-eGFR demo on the VistA side uses eleven clearly
+labeled synthetic "twin" patients (DFN 9000001-9000011, `vehu-synthetic-overlay`) that exist only as raw RPC
 reply text in `data/vista/overlay_patients.json`, plus the real VEHU patient DFN 100881, whose creatinine gives
 a computed eGFR. One junk VEHU patient (DFN 100897, 1,430 orders) is excluded.
 

@@ -160,6 +160,22 @@
         "vitals": "29392^WT^176^3260812.1534^176 lb^(80.00 kg)^\r\n",
         "newold": "3260820.1237^3260820.1237"
       }
+    },
+    {
+      "dfn": "9000011",
+      "label": "K. NSAID + LISINOPRIL-HCTZ combo tablet, eGFR ~40 [VistA twin of hand-11]",
+      "note": "Synthetic patient expressed as raw VistA RPC replies (NOT in VEHU); twin of hand-11",
+      "twin_of": "hand-11",
+      "replies": {
+        "select": "SYNTHETICPATIENT,KTWIN^F^2550315^000000000^^^^^0^^0^0^^",
+        "meds": "~OP^701P;O^LISINOPRIL-HCTZ 20-12.5 TAB^^^^^^39001^PENDING^^^30^^0\r\n LISINOPRIL-HCTZ 20-12.5 TAB  Qty: 30\r\n\\ Sig: TAKE ONE TABLET BY MOUTH DAILY\r\n",
+        "problems": "801^Hypertensive disorder (SCT 38341003)^A^401.9^^3240315.0000^^^^^^ORQQPL DETAIL^^38341003^0^ICD^\r\n802^Chronic kidney disease (SCT 709044004)^A^585.9^^3240315.0000^^^^^^ORQQPL DETAIL^^709044004^0^ICD^\r\n",
+        "labs": [
+          "8^CH^3260820.1237^72^SERUM^CH 0001 1^PROVIDER,SYNTHETIC^^^3260820.1237\r\n173^CREATININE^     1.4^^mg/dL^.9 - 1.4\r\nReport Released Date/Time: synthetic\r\n"
+        ],
+        "vitals": "29392^WT^163^3260812.1534^163 lb^(74.00 kg)^\r\n",
+        "newold": "3260820.1237^3260820.1237"
+      }
     }
   ]
 }
