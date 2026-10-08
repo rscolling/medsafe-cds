@@ -146,20 +146,20 @@ All settings are read once at startup (`backend/app/config.py`); every one has a
 
 ## Verification status (what was actually run)
 
-Run on the author's dev box (Debian, Python 3.12.14 via uv, Node 20.19.2) on 2026-10-07, on the `prerecord-fixes` commits
-on top of 272f5a2, unless a row says otherwise:
+Run on the author's dev box (Debian, Python 3.12.14 via uv, Node 20.19.2) on 2026-10-08, on the `prerecord-fixes` commits
+on top of 272f5a2 (including the identity-only patient picker and medication pop-up), unless a row says otherwise:
 
 | check | result |
 |---|---|
-| backend unit + contract tests (`make test`) | 414 passed, 25 integration tests deselected; coverage 97.21% (gate 85%) |
+| backend unit + contract tests (`make test`) | 432 passed, 25 integration tests deselected; coverage 97.40% (gate 85%) |
 | `ruff check` / `ruff format --check` / `mypy app` (strict) | clean |
 | integration tests | **11 passed** against live VEHU at 634d347 (incl. a diff of all 12,837 recorded RPC replies); **not re-run since** (VEHU and HAPI were not up for the later local passes). HAPI: 13/13 locally with HAPI v7.4.0 before the review fixes; the CI `integration-hapi` job (HAPI service container) is green on 272f5a2 (below) |
 | live VEHU verification | RPCs ORWPT SELECT, ORWPS ACTIVE, ORQQPL LIST, ORWLRR NEWOLD/INTERIMG, ORQQVI VITALS work through the patched client; live output matched the recorded fixtures (634d347) |
 | frontend eslint, tsc, build | clean |
-| Playwright e2e (system Chrome) | 9 passed |
+| Playwright e2e (Playwright chromium) | 15 passed |
 | `make security` | pip-audit no known vulnerabilities, bandit clean, `npm audit` 0 (source-map-js 1.2.2) |
-| gitleaks 8.21.2 | full history and working tree: no leaks |
-| `make compare` | regenerated after adding patient K; headline figures unchanged (63.1% cohort, 86.8% recorded VEHU) |
+| gitleaks 8.21.2 | full history and working tree: no leaks (2026-10-07; not re-run on the picker commits) |
+| `make compare` | regenerated after adding patient K; headline figures unchanged (63.1% cohort, 86.8% recorded VEHU); output identical after the picker commits |
 | `docker compose up --build` | **verified end to end** on 272f5a2 on the dev box: 310 synthetic patients loaded into HAPI, backend healthy, UI on :5173 |
 | GitHub Actions workflow | **passed** on 272f5a2: [run 36620810105](https://github.com/rscolling/medsafe-cds/actions/runs/36620810105), all four jobs (backend, frontend, integration-hapi, security) green |
 

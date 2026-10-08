@@ -141,3 +141,20 @@ Fresh `git clone` into /tmp, `scripts/setup.sh`, on 2026-09-29 (Python 3.12.14, 
   (precision 0.6) vs TP=9 FP=0 context (precision 1.0), recall 1.0. No stderr output.
 - Not re-run on these commits: live VEHU and HAPI integration tests, `docker compose`, and GitHub Actions (nothing
   pushed).
+
+### Identity-only patient picker + active-medications pop-up, 2026-10-08 (local, not pushed)
+
+- Changes: `/api/patients` returns name, sex, birth date, age and MRN (when present) from each patient's own Patient
+  resource / VistA `ORWPT SELECT`; new read-only `GET /api/patients/{id}/medications?source=fhir|vista`; the UI picker
+  shows identity only and choosing a patient pops up a dismissible, keyboard-accessible medication card (with a
+  "View active meds" button to reopen it); VistA meds keep their own order status as an extension; demo script maps
+  each scenario to its synthetic patient name and ID; Blue Ridge Bear Automation credit.
+- `make test`: 432 passed, 25 integration tests deselected, coverage 97.40% (gate 85%).
+- `make lint` clean (ruff, format check, `mypy app` strict, eslint 0 warnings, tsc). `npm run build` OK.
+- Playwright e2e (Playwright chromium): 15 passed (new: identity-only dropdown on FHIR and VistA, the pop-up with
+  keyboard dismissal / focus return / reopen, VistA status + mapped RxNorm + empty list, reopen right after close,
+  footer credit).
+- `make security`: pip-audit no known vulnerabilities, bandit clean, `npm audit` 0.
+- `make compare`: identical to `docs/results/baseline_comparison.txt` (cohort 63.1%, recorded VEHU 86.8%;
+  illustrative, synthetic data).
+- Not re-run: live VEHU and HAPI integration tests (containers not up), `docker compose`, GitHub Actions, gitleaks.
