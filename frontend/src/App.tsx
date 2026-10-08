@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from './api'
+import { ActiveMedsDialog } from './components/ActiveMedsDialog'
 import { AlertCard } from './components/AlertCard'
 import { PatientPanel } from './components/PatientPanel'
+import { patientOptionText } from './patientLabel'
 import type { CompareResponse, Drug, PatientSummary, Source, SourceStatus } from './types'
 
 const DISCLAIMER = 'Prototype, not clinical advice. Synthetic data only. No real patients.'
@@ -24,6 +26,10 @@ export default function App() {
   const [result, setResult] = useState<CompareResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [medsOpen, setMedsOpen] = useState(false)
+  const opener = useRef<HTMLElement | null>(null)
+  const patientSelect = useRef<HTMLSelectElement>(null)
+  const medsButton = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     api.drugs().then((d) => {
@@ -42,6 +48,7 @@ export default function App() {
         setPatients(p)
         setPatientId(p[0]?.id ?? '')
         setResult(null)
+        setMedsOpen(false)
       })
       .catch((e: unknown) => { setError(String(e)) })
     return () => {
@@ -95,14 +102,38 @@ export default function App() {
 
         <label>
           Patient{' '}
-          <select value={patientId} onChange={(e) => { setPatientId(e.target.value) }} aria-label="Patient">
+          <select
+            ref={patientSelect}
+            value={patientId}
+            onChange={(e) => {
+              // Choosing a patient pops up their current medications (as an EHR chart opens on its med list).
+              setPatientId(e.target.value)
+              setResult(null)
+              opener.current = patientSelect.current
+              setMedsOpen(true)
+            }}
+            aria-label="Patient"
+          >
             {patients.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.label}
+                {patientOptionText(p, source)}
               </option>
             ))}
           </select>
         </label>
+        <button
+          ref={medsButton}
+          type="button"
+          className="secondary"
+          disabled={!patientId}
+          aria-haspopup="dialog"
+          onClick={() => {
+            opener.current = medsButton.current
+            setMedsOpen(true)
+          }}
+        >
+          View active meds
+        </button>
         {selected?.note && <small className="note">{selected.note}</small>}
 
         <label>
@@ -166,6 +197,14 @@ export default function App() {
           </div>
         </>
       )}
+
+      <ActiveMedsDialog
+        open={medsOpen}
+        source={source}
+        patient={selected}
+        onClose={() => { setMedsOpen(false) }}
+        returnFocus={() => opener.current}
+      />
 
       <footer>
         <p>{DISCLAIMER}</p>

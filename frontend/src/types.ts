@@ -2,9 +2,40 @@ export type Source = 'fhir' | 'vista'
 
 export interface PatientSummary {
   id: string
+  /** Identity from the patient's own Patient resource / VistA demographics (null when the source had none). */
+  name: string | null
+  sex: string | null
+  birthDate: string | null
+  age: number | null
+  mrn: string | null
+  demographics: 'ok' | 'unavailable'
+  /** Internal demo-scenario label (docs/tests). Never shown in the patient picker. */
   label: string
   kind: string
   note: string
+}
+
+export interface RxNormCode {
+  code: string
+  display: string
+}
+
+export interface MedicationItem {
+  id: string | null
+  name: string
+  sig: string | null
+  status: string
+  sourceStatus: string | null
+  category: string | null
+  rxnorm: RxNormCode[]
+  rxnormSource: 'coded' | 'mapped' | null
+}
+
+export interface MedicationList {
+  patientId: string
+  source: Source
+  disclaimer: string
+  medications: MedicationItem[]
 }
 
 export interface Drug {
