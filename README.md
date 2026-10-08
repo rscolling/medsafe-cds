@@ -42,7 +42,7 @@ This is a **localhost prototype**. Do not put it on a network, and never load re
   `/api/audit/summary`, `/metrics` and `/docs` are open, and patient ids in logs/audit are pseudonymised with a
   public default salt (trivially reversible).
 - Set `MEDSAFE_AUDIT_API_KEY` to protect `/api/audit*`, `/metrics` and the UI helper endpoints `/api/sources`,
-  `/api/patients`, `/api/compare` (send it as `X-API-Key`) and to switch off `/docs` and `/openapi.json`. The bundled
+  `/api/patients`, `/api/patients/{id}/medications`, `/api/compare` (send it as `X-API-Key`) and to switch off `/docs` and `/openapi.json`. The bundled
   demo UI does not send a key, so it only works keyless on localhost; with a key set, use the CDS Hooks endpoints or
   call the API with the header. `/health` and `/ready` stay open for probes (`/ready` also reports a down data source under `degraded`). Set `MEDSAFE_PSEUDONYM_SALT` (16+
   random characters).
@@ -69,7 +69,7 @@ This is a **localhost prototype**. Do not put it on a network, and never load re
 | FHIR R4 adapter (HAPI or bundled fixtures) | `backend/app/adapters/fhir/` |
 | VistA adapter (RPC Broker, live or recorded) + vendored client | `backend/app/adapters/vista/`, `backend/third_party/vista_clients/` |
 | CDS Hooks API, audit trail (SQLite), Prometheus metrics, rate limiting, structured logs | `backend/app/api/`, `audit/`, `metrics.py` |
-| React 19 + TypeScript UI with baseline vs context panels, "why" and override capture | `frontend/` |
+| React 19 + TypeScript UI: identity-only patient picker, active-medications pop-up card, baseline vs context panels, "why" and override capture | `frontend/` |
 | Data: 11 hand-authored patients (14 labeled scenarios), seeded cohort, mapping tables, recorded VEHU replies | `data/` |
 | Docs | [docs/architecture.md](docs/architecture.md), [docs/integration-notes.md](docs/integration-notes.md), [docs/brief.md](docs/brief.md), [docs/demo-script.md](docs/demo-script.md) |
 
@@ -77,6 +77,14 @@ CDS Hooks endpoints: `GET /cds-services`, `POST /cds-services/medsafe-order-sign
 `POST /cds-services/medsafe-order-sign-baseline` (comparison only), `POST /cds-services/{id}/feedback`.
 The data source is chosen per request with `extension["org.medsafe.source"]` (`fhir` or `vista`); a full
 prefetch is also accepted. Operational endpoints: `/health`, `/ready`, `/metrics`, `/api/*`.
+
+UI helper endpoints: `GET /api/patients?source=fhir|vista` returns each patient's identity (name, sex, birth date,
+age, MRN when the record has one) read from the patient's own Patient resource or VistA `ORWPT SELECT`, plus the
+internal scenario `label` used by docs and scripts. `GET /api/patients/{id}/medications?source=fhir|vista` is a
+read-only list of current medications (name, dose/sig, status, VistA's own order status, RxNorm coded or mapped from
+free text) through the same adapters the CDS service uses. In the UI the picker shows identity only; choosing a
+patient pops up the medication card. [docs/demo-script.md](docs/demo-script.md) maps each scenario to its synthetic
+patient name and ID.
 
 ## Scope and honesty statements
 
@@ -111,7 +119,7 @@ All settings are read once at startup (`backend/app/config.py`); every one has a
 |---|---|---|
 | `MEDSAFE_ROOT` | repo root | directory holding `rules/` and `data/`; set it for a non-editable install (the Docker image does) |
 | `MEDSAFE_ENV` | `dev` | `production` refuses to start without `MEDSAFE_AUDIT_API_KEY` and a non-default salt |
-| `MEDSAFE_AUDIT_API_KEY` | unset | `X-API-Key` for `/api/audit*`, `/metrics`, `/api/sources`, `/api/patients`, `/api/compare` |
+| `MEDSAFE_AUDIT_API_KEY` | unset | `X-API-Key` for `/api/audit*`, `/metrics`, `/api/sources`, `/api/patients` (and `/api/patients/{id}/medications`), `/api/compare` |
 | `MEDSAFE_PSEUDONYM_SALT` | dev default | salt for pseudonymised ids in logs and audit (16+ chars) |
 | `MEDSAFE_AUDIT_DB` | `audit.sqlite3` | SQLite file for the audit trail (`:memory:` for tests) |
 | `MEDSAFE_CORS_ORIGINS` | `http://localhost:5173,http://localhost:8080` | comma-separated browser origins allowed by CORS |
