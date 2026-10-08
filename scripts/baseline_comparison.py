@@ -49,7 +49,8 @@ def main() -> int:
         (f"VistA: synthetic overlay twins (n={len(twin_ids)})", run_cohort(service, "vista", twin_ids)),
     ]
     docs_dir = settings.data_dir / "patients" / "hand-authored"
-    twin_map = {f"hand-{i:02d}": str(9000000 + i) for i in range(1, 11)}
+    overlay = json.loads((settings.data_dir / "vista" / "overlay_patients.json").read_text("utf-8"))
+    twin_map = {p["twin_of"]: p["dfn"] for p in overlay["patients"] if p.get("twin_of")}
     labeled = {
         "FHIR": labeled_scenarios(service, "fhir", docs_dir),
         "VistA twins": labeled_scenarios(service, "vista", docs_dir, twin_map),

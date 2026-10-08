@@ -27,6 +27,7 @@ from app.config import Settings
 from app.context import build_context
 from app.logging_setup import configure_logging, pseudonymize, redact_error, request_id_var
 from app.metrics import Metrics
+from app.patient_view import medication_summary, patient_identity
 from app.ratelimit import RateLimiter
 from app.registry import build_sources
 from app.rules.engine import DISCLAIMER, RulesEngine
@@ -371,12 +372,50 @@ def create_app(
         return {name: src.status() for name, src in service.sources.items()}
 
     @app.get("/api/patients", dependencies=[Depends(require_key)])
-    def patients(source: str) -> list[dict[str, str]]:
+    def patients(source: str) -> list[dict[str, Any]]:
+        """Patient picker. Identity (name, sex, DOB, age, MRN) comes from each patient's own Patient resource / VistA
+        demographics. ``label`` is the internal demo-scenario label (docs, tests), not meant for the picker."""
         try:
             src = service.source(source)
         except UnknownSourceError:
             raise HTTPException(status_code=404, detail="unknown source") from None
-        return [{"id": p.id, "label": p.label, "kind": p.synthetic_kind, "note": p.note} for p in src.list_patients()]
+        today = service.today()
+        return [
+            {
+                "id": p.id,
+                **patient_identity(p.patient, today),
+                "label": p.label,
+                "kind": p.synthetic_kind,
+                "note": p.note,
+            }
+            for p in src.list_patients()
+        ]
+
+    @app.get("/api/patients/{patient_id}/medications", dependencies=[Depends(require_key)])
+    def patient_medications(patient_id: str, source: str) -> dict[str, Any]:
+        """Read-only current medication list (active / pending / on-hold, as the adapter defines "current") through
+        the same PatientSource adapter the CDS service uses."""
+        if not patient_id or len(patient_id) > 128:
+            raise HTTPException(status_code=422, detail="patient id is required (max 128 chars)")
+        try:
+            src = service.source(source)
+            meds = src.get_active_meds(patient_id)
+        except UnknownSourceError:
+            raise HTTPException(status_code=404, detail="unknown source") from None
+        except (KeyError, ValueError):
+            raise HTTPException(status_code=404, detail="unknown patient") from None
+        except SourceUnavailableError as exc:
+            metrics.source_errors.labels(source).inc()
+            logger.warning(
+                "medications: source unavailable", extra={"source": source, "error": redact_error(exc, patient_id)}
+            )
+            raise HTTPException(status_code=503, detail="data source unavailable") from exc
+        items = [medication_summary(m) for m in meds if isinstance(m, dict)]
+        logger.info(
+            "medications listed",
+            extra={"source": source, "patient": pseudonymize(patient_id, settings.pseudonym_salt), "count": len(items)},
+        )
+        return {"patientId": patient_id, "source": source, "disclaimer": DISCLAIMER, "medications": items}
 
     @app.get("/api/drugs")
     def drugs() -> list[dict[str, str]]:

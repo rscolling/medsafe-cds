@@ -31,3 +31,16 @@ button:disabled { opacity: .5; cursor: default; }
 .patient dl { display: grid; grid-template-columns: max-content 1fr; gap: .15rem 1rem; margin: 0; }
 .patient dt { color: #556; } .patient dd { margin: 0; }
 footer { margin-top: 2rem; color: #556; font-size: .85rem; }
+button.secondary { background: #fff; color: #234; }
+.meds-dialog { border: none; padding: 0; border-radius: 10px; max-width: min(56rem, 94vw); width: 100%; box-shadow: 0 12px 40px rgba(0, 0, 0, .3); }
+.meds-dialog::backdrop { background: rgba(20, 30, 45, .45); }
+.meds-card { padding: 1rem 1.25rem; }
+.meds-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.meds-head h2 { margin: 0; font-size: 1.15rem; }
+.meds-patient { margin: .5rem 0 .25rem; }
+.meds-sub { margin: 0 0 .75rem; font-size: .85rem; color: #556; }
+.meds-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.meds-table th, .meds-table td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid #e3e5ea; vertical-align: top; }
+.meds-table th { background: #f1f3f6; }
+.meds-cat { color: #667; font-size: .8rem; }
+.credit { margin-top: .25rem; font-size: .8rem; color: #667; }

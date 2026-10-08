@@ -148,7 +148,7 @@ def format_report(sections: list[tuple[str, Tally]], labeled: dict[str, dict[str
 LIMIT_NOTES = [
     "Cohorts are synthetic. The Synthea-style cohort is drawn from a seeded generator whose prevalence and lab distributions were chosen by the author; the reduction % mostly reflects those choices.",
     "The VEHU cohort is a public test database with 2009-2016 dates, stock copied lab values, and few relevant drug combinations; most candidate orders find no matching class there.",
-    "'Clinically warranted' labels are the author's judgement on 10 hand-authored scenarios (n is tiny); precision/recall there show the mechanism, not accuracy.",
+    "'Clinically warranted' labels are the author's judgement on 14 scenarios across 11 hand-authored patients (n is tiny); precision/recall there show the mechanism, not accuracy.",
     "Context mode adds data-gap info cards instead of silently passing; they are counted separately from actionable alerts.",
     "No clinician review, no real EHR data, no outcome data. Rule thresholds are prototype readings of public labels/literature, not clinical guidance.",
 ]

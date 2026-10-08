@@ -101,15 +101,27 @@ class FhirAdapter:
 
     # ------------------------------------------------------------ interface
     def list_patients(self) -> list[PatientSummary]:
-        ids = self._demo_ids or sorted(self._store.docs)
+        ids = [pid for pid in (self._demo_ids or sorted(self._store.docs)) if pid in self._store.docs]
+        live = self._patients_http(ids) if self.mode == "http" else {}
         out: list[PatientSummary] = []
         for pid in ids:
-            doc = self._store.docs.get(pid)
-            if doc is None:
-                continue
+            doc = self._store.docs[pid]
             kind = "hand-authored" if pid.startswith("hand-") else "synthea-style"
-            out.append(PatientSummary(pid, doc.get("label", pid), kind, doc.get("note", "")))
+            patient = live.get(pid) or next((r for r in doc["resources"] if r["resourceType"] == "Patient"), None)
+            out.append(PatientSummary(pid, doc.get("label", pid), kind, doc.get("note", ""), patient))
         return out
+
+    def _patients_http(self, ids: list[str]) -> dict[str, Resource]:
+        """Demographics for the picker in one search (``Patient?_id=a,b,...``). On failure the bundled copy of the
+        same Patient resource is used (``load_data.py`` loads these fixtures into HAPI), and that is logged."""
+        if not ids:
+            return {}
+        try:
+            found = self._search("Patient", {"_id": ",".join(ids)})
+        except SourceUnavailableError as exc:
+            logger.warning("HAPI Patient search failed; patient list uses the bundled demographics (%s)", exc)
+            return {}
+        return {str(r.get("id")): r for r in found if r.get("resourceType") == "Patient"}
 
     def get_patient(self, patient_id: str) -> Resource:
         if self.mode == "http":

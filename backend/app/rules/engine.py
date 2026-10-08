@@ -241,7 +241,7 @@ def truncate_summary(text: str, limit: int = 140) -> str:
 
 
 def _fmt_baseline_summary(rule: Rule) -> str:
-    return f"{rule.title} (drug-class match)"
+    return f"{rule.baseline_title or rule.title} (drug-class match)"
 
 
 def _predicate(ctx: PatientContext, p: Predicate) -> tuple[bool, str]:

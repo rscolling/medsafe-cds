@@ -3,6 +3,8 @@
 Each `*.yaml` file is one versioned rule. Schema (validated by `app/rules/schema.py`):
 
 - `id`, `version` (semver), `title`, `status` (`prototype`), `severity`
+- `baseline_title` (optional): what baseline mode checked (drug classes only), used for baseline card summaries
+  as `<baseline_title> (drug-class match)`; `title` describes the context condition and is the fallback.
 - `match`: which orders trigger the rule. `groups` is a list of drug-class lists; the regimen
   (draft order + current active meds) must contain a *distinct* drug for every group, and the draft
   order must be one of them. This is the **baseline** ("any drug-class match fires") definition.

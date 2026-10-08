@@ -1,6 +1,7 @@
 id: metformin-low-egfr
 version: 1.0.0
 title: "Metformin with reduced eGFR"
+baseline_title: "Metformin ordered"
 status: prototype
 match:
   groups: [[metformin]]

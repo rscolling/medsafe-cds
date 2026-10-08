@@ -15,20 +15,20 @@ suppressed by context:             910 (63.1% of baseline)
   raas-potassium-hyperkalemia              232    170     0
   rivaroxaban-renal-dose                   300      7     8
 
-## FHIR: hand-authored patients (n=10)
-evaluations (patient x candidate order): 80
-baseline alerts:                   48
-context-aware actionable alerts:   19
+## FHIR: hand-authored patients (n=11)
+evaluations (patient x candidate order): 88
+baseline alerts:                   56
+context-aware actionable alerts:   25
 context-aware data-gap (info):     1
-suppressed by context:             28 (58.3% of baseline)
+suppressed by context:             30 (53.6% of baseline)
 
   rule                                baseline   fire   gap
-  apixaban-dose-reduction                   10      1     0
-  lithium-interacting-drugs                  6      6     0
-  metformin-low-egfr                        10      3     1
-  nsaid-raas-diuretic-aki                    4      2     0
-  raas-potassium-hyperkalemia                8      6     0
-  rivaroxaban-renal-dose                    10      1     0
+  apixaban-dose-reduction                   11      1     0
+  lithium-interacting-drugs                  7      7     0
+  metformin-low-egfr                        11      4     1
+  nsaid-raas-diuretic-aki                    6      4     0
+  raas-potassium-hyperkalemia               10      8     0
+  rivaroxaban-renal-dose                    11      1     0
 
 ## VistA (recorded): VEHU patients with meds (n=110)
 evaluations (patient x candidate order): 880
@@ -44,33 +44,33 @@ suppressed by context:             296 (86.8% of baseline)
   raas-potassium-hyperkalemia                4      2     0
   rivaroxaban-renal-dose                   110      0     0
 
-## VistA: synthetic overlay twins (n=10)
-evaluations (patient x candidate order): 80
-baseline alerts:                   48
-context-aware actionable alerts:   19
+## VistA: synthetic overlay twins (n=11)
+evaluations (patient x candidate order): 88
+baseline alerts:                   56
+context-aware actionable alerts:   25
 context-aware data-gap (info):     1
-suppressed by context:             28 (58.3% of baseline)
+suppressed by context:             30 (53.6% of baseline)
 
   rule                                baseline   fire   gap
-  apixaban-dose-reduction                   10      1     0
-  lithium-interacting-drugs                  6      6     0
-  metformin-low-egfr                        10      3     1
-  nsaid-raas-diuretic-aki                    4      2     0
-  raas-potassium-hyperkalemia                8      6     0
-  rivaroxaban-renal-dose                    10      1     0
+  apixaban-dose-reduction                   11      1     0
+  lithium-interacting-drugs                  7      7     0
+  metformin-low-egfr                        11      4     1
+  nsaid-raas-diuretic-aki                    6      4     0
+  raas-potassium-hyperkalemia               10      8     0
+  rivaroxaban-renal-dose                    11      1     0
 
 ## Hand-authored labeled scenarios (FHIR)
-baseline: TP=8 FP=6 FN=0 precision=0.571 recall=1.0
-context : TP=8 FP=0 FN=0 precision=1.0 recall=1.0
+baseline: TP=9 FP=6 FN=0 precision=0.6 recall=1.0
+context : TP=9 FP=0 FN=0 precision=1.0 recall=1.0
 
 ## Hand-authored labeled scenarios (VistA twins)
-baseline: TP=8 FP=6 FN=0 precision=0.571 recall=1.0
-context : TP=8 FP=0 FN=0 precision=1.0 recall=1.0
+baseline: TP=9 FP=6 FN=0 precision=0.6 recall=1.0
+context : TP=9 FP=0 FN=0 precision=1.0 recall=1.0
 
 ## Limits (read before quoting any number)
 - Cohorts are synthetic. The Synthea-style cohort is drawn from a seeded generator whose prevalence and lab distributions were chosen by the author; the reduction % mostly reflects those choices.
 - The VEHU cohort is a public test database with 2009-2016 dates, stock copied lab values, and few relevant drug combinations; most candidate orders find no matching class there.
-- 'Clinically warranted' labels are the author's judgement on 10 hand-authored scenarios (n is tiny); precision/recall there show the mechanism, not accuracy.
+- 'Clinically warranted' labels are the author's judgement on 14 scenarios across 11 hand-authored patients (n is tiny); precision/recall there show the mechanism, not accuracy.
 - Context mode adds data-gap info cards instead of silently passing; they are counted separately from actionable alerts.
 - No clinician review, no real EHR data, no outcome data. Rule thresholds are prototype readings of public labels/literature, not clinical guidance.
 

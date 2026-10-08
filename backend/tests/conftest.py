@@ -16,7 +16,12 @@ from app.service import CdsService  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 HAND_DIR = ROOT / "data" / "patients" / "hand-authored"
-TWIN = {f"hand-{i:02d}": str(9000000 + i) for i in range(1, 11)}
+# hand-authored FHIR id -> its VistA overlay twin's DFN (from the generated overlay, so new patients are picked up)
+TWIN = {
+    p["twin_of"]: p["dfn"]
+    for p in json.loads((ROOT / "data" / "vista" / "overlay_patients.json").read_text())["patients"]
+    if p.get("twin_of")
+}
 
 
 @pytest.fixture(scope="session")

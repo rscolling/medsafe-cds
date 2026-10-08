@@ -1,6 +1,7 @@
 id: lithium-interacting-drugs
 version: 1.0.0
 title: "Lithium with NSAID, ACEI/ARB or diuretic - control rule, context mode does not change it"
+baseline_title: "Lithium with NSAID, ACEI/ARB or diuretic"
 status: prototype
 match:
   groups: [[lithium], [nsaid, raas, thiazide, loop_diuretic]]

@@ -20,7 +20,7 @@ weight, and it cannot tell "no problem" from "no data".
    structured logs, rate limiting, CI, containers.
 
 **Numbers (illustrative, synthetic).** On a seeded 300-patient cohort context mode suppresses 63% of baseline
-alerts (with data-gap cards counted separately); on ten author-labeled scenarios precision rises from 0.571 to
+alerts (with data-gap cards counted separately); on 14 author-labeled scenarios precision rises from 0.6 to
 1.0 with recall unchanged at 1.0. These are mechanism demos, not evidence of clinical performance.
 
 **Integration lessons from VistA.** Free-text medication names; every outpatient order PENDING; no eGFR (compute

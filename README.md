@@ -3,6 +3,8 @@
 > **Prototype, not clinical advice.** Synthetic data only. No real patient data, no real VA/VistA
 > connection, no vendor drug-knowledge content. See [DISCLAIMER.md](DISCLAIMER.md).
 
+Built by **BRBAutomation**.
+
 A small **CDS Hooks 2.0** service that shows one idea: **one rules engine, two very different data sources
 (FHIR R4 and VistA RPC), the same alerts, and fewer false alarms** because rules look at patient context
 (labs, problems, age, weight) instead of only matching drug classes.
@@ -42,7 +44,7 @@ This is a **localhost prototype**. Do not put it on a network, and never load re
   `/api/audit/summary`, `/metrics` and `/docs` are open, and patient ids in logs/audit are pseudonymised with a
   public default salt (trivially reversible).
 - Set `MEDSAFE_AUDIT_API_KEY` to protect `/api/audit*`, `/metrics` and the UI helper endpoints `/api/sources`,
-  `/api/patients`, `/api/compare` (send it as `X-API-Key`) and to switch off `/docs` and `/openapi.json`. The bundled
+  `/api/patients`, `/api/patients/{id}/medications`, `/api/compare` (send it as `X-API-Key`) and to switch off `/docs` and `/openapi.json`. The bundled
   demo UI does not send a key, so it only works keyless on localhost; with a key set, use the CDS Hooks endpoints or
   call the API with the header. `/health` and `/ready` stay open for probes (`/ready` also reports a down data source under `degraded`). Set `MEDSAFE_PSEUDONYM_SALT` (16+
   random characters).
@@ -69,14 +71,22 @@ This is a **localhost prototype**. Do not put it on a network, and never load re
 | FHIR R4 adapter (HAPI or bundled fixtures) | `backend/app/adapters/fhir/` |
 | VistA adapter (RPC Broker, live or recorded) + vendored client | `backend/app/adapters/vista/`, `backend/third_party/vista_clients/` |
 | CDS Hooks API, audit trail (SQLite), Prometheus metrics, rate limiting, structured logs | `backend/app/api/`, `audit/`, `metrics.py` |
-| React 19 + TypeScript UI with baseline vs context panels, "why" and override capture | `frontend/` |
-| Data: 10 hand-authored scenarios, seeded cohort, mapping tables, recorded VEHU replies | `data/` |
+| React 19 + TypeScript UI: identity-only patient picker, active-medications pop-up card, baseline vs context panels, "why" and override capture | `frontend/` |
+| Data: 11 hand-authored patients (14 labeled scenarios), seeded cohort, mapping tables, recorded VEHU replies | `data/` |
 | Docs | [docs/architecture.md](docs/architecture.md), [docs/integration-notes.md](docs/integration-notes.md), [docs/brief.md](docs/brief.md), [docs/demo-script.md](docs/demo-script.md) |
 
 CDS Hooks endpoints: `GET /cds-services`, `POST /cds-services/medsafe-order-sign` (context-aware),
 `POST /cds-services/medsafe-order-sign-baseline` (comparison only), `POST /cds-services/{id}/feedback`.
 The data source is chosen per request with `extension["org.medsafe.source"]` (`fhir` or `vista`); a full
 prefetch is also accepted. Operational endpoints: `/health`, `/ready`, `/metrics`, `/api/*`.
+
+UI helper endpoints: `GET /api/patients?source=fhir|vista` returns each patient's identity (name, sex, birth date,
+age, MRN when the record has one) read from the patient's own Patient resource or VistA `ORWPT SELECT`, plus the
+internal scenario `label` used by docs and scripts. `GET /api/patients/{id}/medications?source=fhir|vista` is a
+read-only list of current medications (name, dose/sig, status, VistA's own order status, RxNorm coded or mapped from
+free text) through the same adapters the CDS service uses. In the UI the picker shows identity only; choosing a
+patient pops up the medication card. [docs/demo-script.md](docs/demo-script.md) maps each scenario to its synthetic
+patient name and ID.
 
 ## Scope and honesty statements
 
@@ -111,7 +121,7 @@ All settings are read once at startup (`backend/app/config.py`); every one has a
 |---|---|---|
 | `MEDSAFE_ROOT` | repo root | directory holding `rules/` and `data/`; set it for a non-editable install (the Docker image does) |
 | `MEDSAFE_ENV` | `dev` | `production` refuses to start without `MEDSAFE_AUDIT_API_KEY` and a non-default salt |
-| `MEDSAFE_AUDIT_API_KEY` | unset | `X-API-Key` for `/api/audit*`, `/metrics`, `/api/sources`, `/api/patients`, `/api/compare` |
+| `MEDSAFE_AUDIT_API_KEY` | unset | `X-API-Key` for `/api/audit*`, `/metrics`, `/api/sources`, `/api/patients` (and `/api/patients/{id}/medications`), `/api/compare` |
 | `MEDSAFE_PSEUDONYM_SALT` | dev default | salt for pseudonymised ids in logs and audit (16+ chars) |
 | `MEDSAFE_AUDIT_DB` | `audit.sqlite3` | SQLite file for the audit trail (`:memory:` for tests) |
 | `MEDSAFE_CORS_ORIGINS` | `http://localhost:5173,http://localhost:8080` | comma-separated browser origins allowed by CORS |
@@ -136,19 +146,22 @@ All settings are read once at startup (`backend/app/config.py`); every one has a
 
 ## Verification status (what was actually run)
 
-Run on the author's dev box (Debian, Python 3.12.14 via uv, Node 20.19.2) on 2026-09-29:
+Run on the author's dev box (Debian, Python 3.12.14 via uv, Node 20.19.2) on 2026-10-08, on the `prerecord-fixes` commits
+on top of 272f5a2 (including the identity-only patient picker and medication pop-up), unless a row says otherwise:
 
 | check | result |
 |---|---|
-| backend unit + contract tests (`make test`) | 394 passed, 24 integration tests deselected; coverage 97.06% (gate 85%). Fresh clone at the review-fix commits |
+| backend unit + contract tests (`make test`) | 432 passed, 25 integration tests deselected; coverage 97.40% (gate 85%) |
 | `ruff check` / `ruff format --check` / `mypy app` (strict) | clean |
-| integration tests | **11 passed** against live VEHU (incl. a diff of all 12,837 recorded RPC replies), **13 HAPI tests skipped** because HAPI was not running in this pass (the earlier run with HAPI v7.4.0 up passed 13/13, before the review fixes; not repeated) |
-| live VEHU verification | RPCs ORWPT SELECT, ORWPS ACTIVE, ORQQPL LIST, ORWLRR NEWOLD/INTERIMG, ORQQVI VITALS work through the patched client; live output matches the recorded fixtures |
+| integration tests | **11 passed** against live VEHU at 634d347 (incl. a diff of all 12,837 recorded RPC replies); **not re-run since** (VEHU and HAPI were not up for the later local passes). HAPI: 13/13 locally with HAPI v7.4.0 before the review fixes; the CI `integration-hapi` job (HAPI service container) is green on 272f5a2 (below) |
+| live VEHU verification | RPCs ORWPT SELECT, ORWPS ACTIVE, ORQQPL LIST, ORWLRR NEWOLD/INTERIMG, ORQQVI VITALS work through the patched client; live output matched the recorded fixtures (634d347) |
 | frontend eslint, tsc, build | clean |
-| Playwright e2e (system Chrome) | 7 passed |
-| Docker images | **Not re-run after the review fixes.** The backend and frontend images built and the backend image served `/health` and CDS Hooks discovery once, before the QA hardening and review-fix commits; nothing since has been built or run |
-| `docker-compose.yml` | parsed and images built with compose v2.29.7; **the full stack was not verified end to end here**: on this sandbox the bridge network could not route container-to-container traffic (the loader could not reach HAPI), so compose is unverified as a running system |
-| GitHub Actions workflow | **not run** (no runner); its commands were run locally |
+| Playwright e2e (Playwright chromium) | 15 passed |
+| `make security` | pip-audit no known vulnerabilities, bandit clean, `npm audit` 0 (source-map-js 1.2.2) |
+| gitleaks 8.21.2 | full history and working tree: no leaks (2026-10-07; not re-run on the picker commits) |
+| `make compare` | regenerated after adding patient K; headline figures unchanged (63.1% cohort, 86.8% recorded VEHU); output identical after the picker commits |
+| `docker compose up --build` | **verified end to end** on 272f5a2 on the dev box: 310 synthetic patients loaded into HAPI, backend healthy, UI on :5173 |
+| GitHub Actions workflow | **passed** on 272f5a2: [run 36620810105](https://github.com/rscolling/medsafe-cds/actions/runs/36620810105), all four jobs (backend, frontend, integration-hapi, security) green |
 
 Precise coverage, test counts, and security-scan results are in the final section of
 [docs/integration-notes.md](docs/integration-notes.md#verification-log).
@@ -156,10 +169,11 @@ Precise coverage, test counts, and security-scan results are in the final sectio
 ## The comparison, and its limits
 
 `make compare` prints alert counts for baseline vs context-aware mode ([docs/results/baseline_comparison.txt](docs/results/baseline_comparison.txt)).
-On the seeded 300-patient cohort context mode suppresses 63.1% of baseline alerts (86.8% on the recorded VEHU cohort, where most orders simply find no matching class), and on the ten labeled
-scenarios precision goes 0.571 to 1.0 at recall 1.0. **Read those as a demonstration of the mechanism, not a
+On the seeded 300-patient cohort context mode suppresses 63.1% of baseline alerts, and 86.8% on the recorded VEHU cohort,
+where most orders simply find no matching class (illustrative, synthetic data); on the 14 labeled scenarios precision
+goes 0.6 to 1.0 at recall 1.0. **Read those as a demonstration of the mechanism, not a
 result**: the cohort's prevalence and lab distributions were chosen by the author, the labels are the
-author's judgement on n=10, there is no clinician review and no outcome data. Data-gap info cards are counted
+author's judgement on n=14 scenarios (11 patients), there is no clinician review and no outcome data. Data-gap info cards are counted
 separately from actionable alerts.
 
 ## VistA live mode
@@ -189,8 +203,8 @@ card and returned by `/api/compare`. `MEDSAFE_VISTA_PENDING_ACTIVE` (default tru
 
 `MEDSAFE_VISTA_MODE`: `live` (broker only), `recorded` (real replies captured from VEHU, used in CI), or
 `auto` (live if reachable and credentials set, else recorded). VEHU has no eGFR results and only two
-metformin patients (neither with labs), so the metformin + low-eGFR demo on the VistA side uses ten clearly
-labeled synthetic "twin" patients (DFN 9000001-9000010, `vehu-synthetic-overlay`) that exist only as raw RPC
+metformin patients (neither with labs), so the metformin + low-eGFR demo on the VistA side uses eleven clearly
+labeled synthetic "twin" patients (DFN 9000001-9000011, `vehu-synthetic-overlay`) that exist only as raw RPC
 reply text in `data/vista/overlay_patients.json`, plus the real VEHU patient DFN 100881, whose creatinine gives
 a computed eGFR. One junk VEHU patient (DFN 100897, 1,430 orders) is excluded.
 
@@ -199,3 +213,4 @@ a computed eGFR. One junk VEHU patient (DFN 100897, 1,430 orders) is excluded.
 - `backend/third_party/vista_clients`: fork of [CivicActions/vista-clients](https://github.com/CivicActions/vista-clients)
   (Apache-2.0) with a documented fix for a reply-parsing bug (see its `NOTICE.md`). `vavista-rpc` (AGPL) is not used.
 - Licence: Apache-2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+- Credit: built by BRBAutomation.

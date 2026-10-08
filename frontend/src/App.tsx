@@ -1,10 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from './api'
+import { ActiveMedsDialog } from './components/ActiveMedsDialog'
 import { AlertCard } from './components/AlertCard'
 import { PatientPanel } from './components/PatientPanel'
+import { patientOptionText } from './patientLabel'
 import type { CompareResponse, Drug, PatientSummary, Source, SourceStatus } from './types'
 
 const DISCLAIMER = 'Prototype, not clinical advice. Synthetic data only. No real patients.'
+
+// Label the FHIR source by what the backend actually serves (/api/sources mode), so a fixtures demo is not shown as HAPI.
+function sourceLabel(source: Source, mode?: string): string {
+  if (source === 'vista') return 'VistA (RPC Broker)'
+  if (mode === 'fixtures') return 'FHIR R4 (bundled fixtures)'
+  if (mode === 'http') return 'FHIR R4 (HAPI)'
+  return 'FHIR R4'
+}
 
 export default function App() {
   const [source, setSource] = useState<Source>('fhir')
@@ -16,6 +26,11 @@ export default function App() {
   const [result, setResult] = useState<CompareResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [medsOpen, setMedsOpen] = useState(false)
+  const [medsRequest, setMedsRequest] = useState(0)
+  const opener = useRef<HTMLElement | null>(null)
+  const patientSelect = useRef<HTMLSelectElement>(null)
+  const medsButton = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     api.drugs().then((d) => {
@@ -34,6 +49,7 @@ export default function App() {
         setPatients(p)
         setPatientId(p[0]?.id ?? '')
         setResult(null)
+        setMedsOpen(false)
       })
       .catch((e: unknown) => { setError(String(e)) })
     return () => {
@@ -75,7 +91,7 @@ export default function App() {
                 checked={source === s}
                 onChange={() => { setSource(s) }}
               />{' '}
-              {s === 'fhir' ? 'FHIR R4 (HAPI)' : 'VistA (RPC Broker)'}
+              {sourceLabel(s, statuses[s]?.mode)}
             </label>
           ))}
           {st && (
@@ -87,14 +103,40 @@ export default function App() {
 
         <label>
           Patient{' '}
-          <select value={patientId} onChange={(e) => { setPatientId(e.target.value) }} aria-label="Patient">
+          <select
+            ref={patientSelect}
+            value={patientId}
+            onChange={(e) => {
+              // Choosing a patient pops up their current medications (as an EHR chart opens on its med list).
+              setPatientId(e.target.value)
+              setResult(null)
+              opener.current = patientSelect.current
+              setMedsOpen(true)
+              setMedsRequest((n) => n + 1)
+            }}
+            aria-label="Patient"
+          >
             {patients.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.label}
+                {patientOptionText(p, source)}
               </option>
             ))}
           </select>
         </label>
+        <button
+          ref={medsButton}
+          type="button"
+          className="secondary"
+          disabled={!patientId}
+          aria-haspopup="dialog"
+          onClick={() => {
+            opener.current = medsButton.current
+            setMedsOpen(true)
+            setMedsRequest((n) => n + 1)
+          }}
+        >
+          View active meds
+        </button>
         {selected?.note && <small className="note">{selected.note}</small>}
 
         <label>
@@ -159,8 +201,20 @@ export default function App() {
         </>
       )}
 
+      <ActiveMedsDialog
+        open={medsOpen}
+        request={medsRequest}
+        source={source}
+        patient={selected}
+        onClose={() => { setMedsOpen(false) }}
+        returnFocus={() => opener.current}
+      />
+
       <footer>
         <p>{DISCLAIMER}</p>
+        <p className="credit" data-testid="credit">
+          Built by BRBAutomation
+        </p>
       </footer>
     </main>
   )

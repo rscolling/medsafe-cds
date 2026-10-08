@@ -1,4 +1,4 @@
-import type { Card, CompareResponse, Drug, PatientSummary, Source, SourceStatus } from './types'
+import type { Card, CompareResponse, Drug, MedicationList, PatientSummary, Source, SourceStatus } from './types'
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -11,6 +11,8 @@ async function json<T>(res: Response): Promise<T> {
 export const api = {
   sources: () => fetch('/api/sources').then(json<Record<Source, SourceStatus>>),
   patients: (source: Source) => fetch(`/api/patients?source=${source}`).then(json<PatientSummary[]>),
+  medications: (source: Source, patientId: string) =>
+    fetch(`/api/patients/${encodeURIComponent(patientId)}/medications?source=${source}`).then(json<MedicationList>),
   drugs: () => fetch('/api/drugs').then(json<Drug[]>),
   compare: (source: Source, patientId: string, rxcui: string) =>
     fetch('/api/compare', {

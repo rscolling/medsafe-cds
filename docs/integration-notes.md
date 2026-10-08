@@ -32,7 +32,7 @@
 - **Paging.** Real patients have up to ~150 lab collections (DFN 100000: 147), one INTERIMG call each. The cap is 200;
   paging compares FileMan values numerically and stops with a `labs-truncated` tag if a page fails to advance or the cap
   is reached. `ORWLRR NEWOLD` disagrees with the INTERIMG chain head for a few patients (2 of 110 recorded, e.g. DFN 737);
-  the chain is authoritative, the disagreement is logged and counted, and a NEWOLD reply that is neither `^` nor a FileMan
+  the chain is authoritative, the disagreement is logged at INFO and counted (`lab_head_disagreements` in `/ready`), and a NEWOLD reply that is neither `^` nor a FileMan
   pair is an error, not "no labs".
 - **`parse_response` bug (fixed in the fork).** Upstream treats any reply whose first byte is below 0x20 as
   an error length prefix, so a legitimate data reply such as `"\r\nNo Data Found"` raised a truncated
@@ -48,7 +48,7 @@
 - **Metformin patients (DFN 100151, 100157) have no labs**, so on native VEHU data the rule yields a data-gap
   card. The best lab patient (DFN 100881, creatinine 2.1, computed eGFR about 24) has no medications. The
   end-to-end metformin + low-eGFR demo on the VistA side therefore uses the labeled synthetic twin patients
-  (DFN 9000001-9000010, in `data/vista/overlay_patients.json`, not in VEHU). The twin overlay is stored as raw
+  (DFN 9000001-9000011, in `data/vista/overlay_patients.json`, not in VEHU). The twin overlay is stored as raw
   RPC reply text and goes through exactly the same parser as real VEHU output. A test asserts the same rule
   fires for VEHU 100881 (with a draft metformin order) and for twin 9000001.
 - **Junk patient DFN 100897** holds 1,430 orders (a drug-list test record) and is excluded.
@@ -72,7 +72,7 @@ not justified; the RPC adapter covers the same ground.
 ## FHIR
 
 - HAPI FHIR `hapiproject/hapi:v7.4.0`, R4, in-memory H2. `scripts/load_data.py` PUTs transaction bundles
-  (client-assigned ids, idempotent): 10 hand-authored patients and the seeded cohort. Real Synthea output can
+  (client-assigned ids, idempotent): 11 hand-authored patients and the seeded cohort. Real Synthea output can
   be loaded with `--synthea-dir`; **Synthea is optional** (`data/synthea/`), and the repo ships no Synthea output.
 - Mapping (`data/mapping/*.csv`): RxNorm ingredient and clinical-drug codes to ingredient class; LOINC
   (creatinine 2160-0, eGFR 62238-1 / 98979-8 / 33914-3, potassium 2823-3, weight 29463-7); SNOMED + ICD-9
@@ -113,3 +113,48 @@ Fresh `git clone` into /tmp, `scripts/setup.sh`, on 2026-09-29 (Python 3.12.14, 
 - Live VEHU integration (`MEDSAFE_VISTA_MODE=live`): 11 passed including the full 12,837-call drift diff; 13 HAPI tests
   skipped (HAPI not up).
 - Still not verified: `docker compose up` end to end, rebuilt Docker images, and the GitHub Actions workflow.
+
+### HEAD 272f5a2 (after the QA3 fixes), 2026-09-29 to 2026-10-07
+
+- `make test` (fresh clone): 407 passed, 24 integration tests deselected, coverage 97.14%. e2e 7 passed; 240-combo
+  FHIR/VistA (recorded) parity 0 mismatches; `make compare` identical to the committed results.
+- GitHub Actions: [run 36620810105](https://github.com/rscolling/medsafe-cds/actions/runs/36620810105) on 272f5a2
+  passed, all four jobs green (backend, frontend, integration-hapi, security).
+- `docker compose up --build` verified end to end on the dev box: 310 synthetic patients loaded into HAPI, backend
+  healthy, UI on :5173. This closes the two "still not verified" items above (the compose stack and the workflow).
+- `make security` later failed locally on a new dev-only advisory, GHSA-68fv-2mgg-jv7q (source-map-js 1.2.1, via
+  vite -> postcss), published after the CI run; fixed on the next commits.
+
+### `prerecord-fixes` commits on top of 272f5a2, 2026-10-07
+
+- Changes: source-map-js 1.2.2; hand-authored synthetic patient K (LISINOPRIL-HCTZ 20-12.5 combination tablet, eGFR
+  ~40) with VistA twin DFN 9000011; baseline card titles say what baseline checked; FHIR source label follows the
+  served mode; NEWOLD/INTERIMG disagreement logged at INFO; `scripts/demo-calls.sh`.
+- `make test`: 414 passed, 25 integration tests deselected (the HAPI tests are parametrised per hand-authored file),
+  coverage 97.21% (gate 85%).
+- `make lint` clean (ruff, format check, `mypy app` strict, eslint 0 warnings, tsc). `npm run build` OK.
+- Playwright e2e (system Chrome): 9 passed (new: source label in fixtures mode; patient K fires on FHIR and VistA).
+- `make security`: pip-audit no known vulnerabilities, bandit clean, `npm audit` 0. gitleaks 8.21.2 on full history and
+  working tree: no leaks.
+- `make compare`: regenerated. Cohort 63.1% and recorded VEHU 86.8% unchanged; hand-authored and twin sections now
+  n=11 (88 evaluations, 56 baseline, 25 fire, 1 data gap, 53.6% suppressed); labeled scenarios TP=9 FP=6 baseline
+  (precision 0.6) vs TP=9 FP=0 context (precision 1.0), recall 1.0. No stderr output.
+- Not re-run on these commits: live VEHU and HAPI integration tests, `docker compose`, and GitHub Actions (nothing
+  pushed).
+
+### Identity-only patient picker + active-medications pop-up, 2026-10-08 (local, not pushed)
+
+- Changes: `/api/patients` returns name, sex, birth date, age and MRN (when present) from each patient's own Patient
+  resource / VistA `ORWPT SELECT`; new read-only `GET /api/patients/{id}/medications?source=fhir|vista`; the UI picker
+  shows identity only and choosing a patient pops up a dismissible, keyboard-accessible medication card (with a
+  "View active meds" button to reopen it); VistA meds keep their own order status as an extension; demo script maps
+  each scenario to its synthetic patient name and ID; BRBAutomation credit.
+- `make test`: 432 passed, 25 integration tests deselected, coverage 97.40% (gate 85%).
+- `make lint` clean (ruff, format check, `mypy app` strict, eslint 0 warnings, tsc). `npm run build` OK.
+- Playwright e2e (Playwright chromium): 15 passed (new: identity-only dropdown on FHIR and VistA, the pop-up with
+  keyboard dismissal / focus return / reopen, VistA status + mapped RxNorm + empty list, reopen right after close,
+  footer credit).
+- `make security`: pip-audit no known vulnerabilities, bandit clean, `npm audit` 0.
+- `make compare`: identical to `docs/results/baseline_comparison.txt` (cohort 63.1%, recorded VEHU 86.8%;
+  illustrative, synthetic data).
+- Not re-run: live VEHU and HAPI integration tests (containers not up), `docker compose`, GitHub Actions, gitleaks.

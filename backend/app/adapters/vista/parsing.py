@@ -21,6 +21,7 @@ logger = logging.getLogger("medsafe.vista.parsing")
 
 # ORWPS ACTIVE statuses that mean "the patient currently has this medication".
 # (VEHU: outpatient orders are all PENDING, non-VA meds are ACTIVE.)
+VISTA_STATUS_URL = "urn:medsafe:vista-order-status"
 CURRENT_STATUS = {
     "ACTIVE": "active",
     "PENDING": "active",
@@ -127,9 +128,12 @@ def med_to_medication_request(dfn: str, med: VistaMed, *, pending_active: bool =
     }
     if med.sig:
         res["dosageInstruction"] = [{"text": med.sig}]
+    # Keep the VistA order status verbatim (PENDING / ACTIVE / HOLD ...): FHIR ``status`` folds several into "active".
+    extensions: list[Resource] = [{"url": VISTA_STATUS_URL, "valueString": med.status.upper()[:40]}]
     strength = parse_strength_mg(med.name)
     if strength is not None:
-        res["extension"] = [{"url": "urn:medsafe:strength-mg-from-name", "valueDecimal": strength}]
+        extensions.append({"url": "urn:medsafe:strength-mg-from-name", "valueDecimal": strength})
+    res["extension"] = extensions
     return res
 
 

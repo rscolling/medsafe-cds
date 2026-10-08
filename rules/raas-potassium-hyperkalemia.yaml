@@ -1,6 +1,7 @@
 id: raas-potassium-hyperkalemia
 version: 1.0.0
 title: "ACEI/ARB + potassium-raising agent (suppressed when recent K and eGFR are reassuring)"
+baseline_title: "ACEI/ARB + potassium-raising agent together"
 status: prototype
 match:
   groups: [[raas], [k_raising]]
