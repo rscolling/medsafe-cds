@@ -27,6 +27,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [medsOpen, setMedsOpen] = useState(false)
+  const [medsRequest, setMedsRequest] = useState(0)
   const opener = useRef<HTMLElement | null>(null)
   const patientSelect = useRef<HTMLSelectElement>(null)
   const medsButton = useRef<HTMLButtonElement>(null)
@@ -111,6 +112,7 @@ export default function App() {
               setResult(null)
               opener.current = patientSelect.current
               setMedsOpen(true)
+              setMedsRequest((n) => n + 1)
             }}
             aria-label="Patient"
           >
@@ -130,6 +132,7 @@ export default function App() {
           onClick={() => {
             opener.current = medsButton.current
             setMedsOpen(true)
+            setMedsRequest((n) => n + 1)
           }}
         >
           View active meds
@@ -200,6 +203,7 @@ export default function App() {
 
       <ActiveMedsDialog
         open={medsOpen}
+        request={medsRequest}
         source={source}
         patient={selected}
         onClose={() => { setMedsOpen(false) }}

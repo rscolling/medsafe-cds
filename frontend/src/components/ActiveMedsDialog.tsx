@@ -5,6 +5,8 @@ import type { MedicationItem, PatientSummary, Source } from '../types'
 
 interface Props {
   open: boolean
+  /** Bumped on every open request, so a request re-opens the dialog even if `open` was already true. */
+  request: number
   source: Source
   patient: PatientSummary | undefined
   onClose: () => void
@@ -33,7 +35,7 @@ function rxnormText(m: MedicationItem): string {
  * <dialog>: focus moves into it, Tab stays inside, Esc / the Close button / a backdrop click dismiss it, and focus
  * returns to the control that opened it.
  */
-export function ActiveMedsDialog({ open, source, patient, onClose, returnFocus }: Props) {
+export function ActiveMedsDialog({ open, request, source, patient, onClose, returnFocus }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   const closeBtn = useRef<HTMLButtonElement>(null)
   const [load, setLoad] = useState<Load>({ state: 'loading' })
@@ -48,7 +50,7 @@ export function ActiveMedsDialog({ open, source, patient, onClose, returnFocus }
     } else if (!open && dlg.open) {
       dlg.close()
     }
-  }, [open])
+  }, [open, request])
 
   useEffect(() => {
     if (!open || !patientId) return
@@ -64,6 +66,9 @@ export function ActiveMedsDialog({ open, source, patient, onClose, returnFocus }
   }, [open, source, patientId])
 
   const handleClose = () => {
+    // The 'close' event is queued as a task: if the dialog was reopened before it arrived (e.g. Esc, then at once a
+    // new patient), the event is stale and must not close the new pop-up.
+    if (ref.current?.open) return
     onClose()
     returnFocus()?.focus()
   }

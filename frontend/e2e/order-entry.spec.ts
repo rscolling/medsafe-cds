@@ -175,3 +175,21 @@ test('VistA popup lists the source status and mapped RxNorm; a patient with no m
   await expect(dialog.getByTestId('meds-patient')).toContainText('HYPERTENSION,PATIENT FEMALE')
   await expect(dialog.getByTestId('meds-empty')).toBeVisible()
 })
+
+test('closing the pop-up and at once choosing another patient still pops up that patient', async ({ page }) => {
+  const select = page.getByLabel('Patient')
+  const dialog = page.getByRole('dialog', { name: 'Current active medications' })
+  await pick(select, /^Synthetic, K · /)
+  await expect(dialog.getByTestId('med-row')).toHaveCount(1)
+  // Close and choose the next patient in one task, so the dialog's queued 'close' event arrives after the reopen.
+  // (a string script: the e2e tsconfig has no DOM types)
+  await page.evaluate(`(() => {
+    document.querySelector('dialog').close()
+    const el = document.querySelector('select[aria-label="Patient"]')
+    el.value = 'hand-04'
+    el.dispatchEvent(new Event('change', { bubbles: true }))
+  })()`)
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByTestId('meds-patient')).toContainText('ID hand-04')
+  await expect(dialog.getByTestId('med-row')).toHaveCount(2)
+})
