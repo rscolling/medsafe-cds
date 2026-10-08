@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 Resource = dict[str, Any]
@@ -18,6 +18,9 @@ class PatientSummary:
     label: str
     synthetic_kind: str  # e.g. "hand-authored", "vehu", "vehu-synthetic-overlay", "synthea"
     note: str = ""
+    # The patient's own Patient resource (demographics) when the source could supply it cheaply, else None.
+    # ``label`` is the internal scenario label (docs, tests); a patient picker shows identity from ``patient``.
+    patient: Resource | None = field(default=None, compare=False, hash=False)
 
 
 class PatientSource(Protocol):

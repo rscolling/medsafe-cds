@@ -131,6 +131,7 @@ class VistaAdapter:
         self._lock = threading.Lock()
         self._inflight: dict[str, threading.Lock] = {}  # per-DFN single-flight
         self._status: tuple[float, dict[str, Any]] | None = None
+        self._demographics: dict[str, Resource] = {}  # DFN -> Patient (names/DOBs do not change within a demo)
         self.truncated_fetches = 0  # counter: lab paging cap or unparseable page hit
         self.head_disagreements = 0  # counter: NEWOLD newest != INTERIMG chain head (L15)
 
@@ -257,12 +258,43 @@ class VistaAdapter:
 
     # ------------------------------------------------------------ interface
     def list_patients(self) -> list[PatientSummary]:
-        out = [
-            PatientSummary(p["dfn"], p["label"], p.get("kind", "vehu"), p.get("note", ""))
-            for p in self._demo
-            if p["dfn"] not in self._excluded
-        ]
-        out += [PatientSummary(o.dfn, o.label, "vehu-synthetic-overlay", o.note) for o in self._overlay.values()]
+        rows = [(p["dfn"], p["label"], p.get("kind", "vehu"), p.get("note", "")) for p in self._demo]
+        rows += [(o.dfn, o.label, "vehu-synthetic-overlay", o.note) for o in self._overlay.values()]
+        rows = [r for r in rows if r[0] not in self._excluded]
+        found = self._identities([r[0] for r in rows])
+        return [PatientSummary(dfn, label, kind, note, found.get(dfn)) for dfn, label, kind, note in rows]
+
+    def _identities(self, dfns: list[str]) -> dict[str, Resource]:
+        """Demographics for the patient picker: ``ORWPT SELECT`` only (one cheap RPC per patient, cached), never the
+        full ~10-RPC chart fetch. The whole list shares one time budget, and after a broker failure the remaining
+        live patients are skipped (shown without demographics) instead of each paying a timeout."""
+        out: dict[str, Resource] = {}
+        budget = _Deadline(self._client, self._deadline_s)
+        live_ok = True
+        for dfn in dfns:
+            with self._lock:
+                hit = self._demographics.get(dfn) or (self._cache[dfn].patient if dfn in self._cache else None)
+            if hit is not None:
+                out[dfn] = hit
+                continue
+            overlay = dfn in self._overlay
+            if not overlay and not live_ok:
+                continue
+            rpc: RpcClient = self._overlay_client if overlay else budget
+            try:
+                patient = parsing.parse_patient_select(dfn, rpc.call("ORWPT SELECT", dfn))
+            except VistaUnavailableError:
+                if self.mode == "live" and not overlay:
+                    live_ok = False
+                    logger.warning(
+                        "patient list: VistA demographics unavailable; remaining patients listed by DFN only"
+                    )
+                continue
+            except ValueError:  # unknown DFN / unparseable reply: list it by DFN, never guess a name
+                continue
+            with self._lock:
+                self._demographics[dfn] = patient
+            out[dfn] = patient
         return out
 
     def get_patient(self, patient_id: str) -> Resource:
