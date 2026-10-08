@@ -148,7 +148,7 @@ Fresh `git clone` into /tmp, `scripts/setup.sh`, on 2026-09-29 (Python 3.12.14, 
   resource / VistA `ORWPT SELECT`; new read-only `GET /api/patients/{id}/medications?source=fhir|vista`; the UI picker
   shows identity only and choosing a patient pops up a dismissible, keyboard-accessible medication card (with a
   "View active meds" button to reopen it); VistA meds keep their own order status as an extension; demo script maps
-  each scenario to its synthetic patient name and ID; Blue Ridge Bear Automation credit.
+  each scenario to its synthetic patient name and ID; BRBAutomation credit.
 - `make test`: 432 passed, 25 integration tests deselected, coverage 97.40% (gate 85%).
 - `make lint` clean (ruff, format check, `mypy app` strict, eslint 0 warnings, tsc). `npm run build` OK.
 - Playwright e2e (Playwright chromium): 15 passed (new: identity-only dropdown on FHIR and VistA, the pop-up with

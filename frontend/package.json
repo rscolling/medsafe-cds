@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
-  "author": "Blue Ridge Bear Automation (BRBAutomation)",
+  "author": "BRBAutomation",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

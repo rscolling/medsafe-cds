@@ -94,8 +94,8 @@ test('every rendered card carries the disclaimer', async ({ page }) => {
   }
 })
 
-test('footer credits Blue Ridge Bear Automation and keeps the disclaimer', async ({ page }) => {
-  await expect(page.getByTestId('credit')).toHaveText('Built by Blue Ridge Bear Automation (BRBAutomation)')
+test('footer credits BRBAutomation and keeps the disclaimer', async ({ page }) => {
+  await expect(page.getByTestId('credit')).toHaveText('Built by BRBAutomation')
   await expect(page.locator('footer')).toContainText(DISCLAIMER)
 })
 
