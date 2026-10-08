@@ -208,6 +208,9 @@ export default function App() {
 
       <footer>
         <p>{DISCLAIMER}</p>
+        <p className="credit" data-testid="credit">
+          Built by Blue Ridge Bear Automation (BRBAutomation)
+        </p>
       </footer>
     </main>
   )

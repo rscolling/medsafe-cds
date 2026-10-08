@@ -43,3 +43,4 @@ button.secondary { background: #fff; color: #234; }
 .meds-table th, .meds-table td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid #e3e5ea; vertical-align: top; }
 .meds-table th { background: #f1f3f6; }
 .meds-cat { color: #667; font-size: .8rem; }
+.credit { margin-top: .25rem; font-size: .8rem; color: #667; }

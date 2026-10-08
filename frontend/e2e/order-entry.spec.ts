@@ -94,6 +94,11 @@ test('every rendered card carries the disclaimer', async ({ page }) => {
   }
 })
 
+test('footer credits Blue Ridge Bear Automation and keeps the disclaimer', async ({ page }) => {
+  await expect(page.getByTestId('credit')).toHaveText('Built by Blue Ridge Bear Automation (BRBAutomation)')
+  await expect(page.locator('footer')).toContainText(DISCLAIMER)
+})
+
 test('FHIR source label reflects the mode the backend serves (bundled fixtures here, not HAPI)', async ({ page }) => {
   await expect(page.getByTestId('source-status')).toContainText('mode: fixtures')
   await expect(page.getByLabel('FHIR R4 (bundled fixtures)')).toBeChecked()

@@ -3,6 +3,8 @@
 > **Prototype, not clinical advice.** Synthetic data only. No real patient data, no real VA/VistA
 > connection, no vendor drug-knowledge content. See [DISCLAIMER.md](DISCLAIMER.md).
 
+Built by **Blue Ridge Bear Automation** (BRBAutomation).
+
 A small **CDS Hooks 2.0** service that shows one idea: **one rules engine, two very different data sources
 (FHIR R4 and VistA RPC), the same alerts, and fewer false alarms** because rules look at patient context
 (labs, problems, age, weight) instead of only matching drug classes.
@@ -211,3 +213,4 @@ a computed eGFR. One junk VEHU patient (DFN 100897, 1,430 orders) is excluded.
 - `backend/third_party/vista_clients`: fork of [CivicActions/vista-clients](https://github.com/CivicActions/vista-clients)
   (Apache-2.0) with a documented fix for a reply-parsing bug (see its `NOTICE.md`). `vavista-rpc` (AGPL) is not used.
 - Licence: Apache-2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+- Credit: built by Blue Ridge Bear Automation (BRBAutomation).

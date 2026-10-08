@@ -7,6 +7,7 @@ name = "medsafe-cds"
 version = "0.1.0"
 description = "Prototype CDS Hooks service: one rules engine, two data sources (FHIR R4 and VistA). Not clinical advice."
 license = { text = "Apache-2.0" }
+authors = [{ name = "Blue Ridge Bear Automation (BRBAutomation)" }]
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115,<1",
